@@ -1,8 +1,10 @@
-import nodemailer from 'nodemailer';
-
 type MailInput = { to: string; subject: string; text: string; html?: string };
 
-async function getTransporter() {
+type MailTransporter = {
+  sendMail: (input: Record<string, unknown>) => Promise<unknown>;
+};
+
+async function getTransporter(): Promise<MailTransporter | null> {
   const host = process.env.SMTP_HOST;
   const port = Number(process.env.SMTP_PORT || '587');
   const user = process.env.SMTP_USER;
@@ -10,12 +12,20 @@ async function getTransporter() {
 
   if (!host || !user || !pass) return null;
 
-  return nodemailer.createTransport({
-    host,
-    port,
-    secure: port === 465,
-    auth: { user, pass }
-  });
+  try {
+    const nodemailerModule = await import('nodemailer');
+    const nodemailer = nodemailerModule.default ?? nodemailerModule;
+
+    return nodemailer.createTransport({
+      host,
+      port,
+      secure: port === 465,
+      auth: { user, pass }
+    }) as MailTransporter;
+  } catch {
+    console.warn('[mail] nodemailer is not installed; falling back to mock logger.');
+    return null;
+  }
 }
 
 export async function sendMail(input: MailInput) {
