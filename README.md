@@ -59,9 +59,7 @@ cp .env.example .env
 ## Install and run
 ```bash
 npm install
-npm run prisma:generate
-npm run prisma:migrate
-npm run prisma:seed
+npm run db:setup
 npm run dev
 ```
 
@@ -119,7 +117,9 @@ Password for most demo users: `Password123!`
 - Admin (standard): `admin@leadlocal.dev`
 - Admin (simple demo login): `admin` / `123`
 - Client: `client1@leadlocal.dev`
+- Client (simple): `client.demo` / `123456`
 - Contractor: `contractor1@leadlocal.dev`
+- Contractor (simple, active sub): `contractor.demo` / `123456`
 
 ## Route map
 ### Public
