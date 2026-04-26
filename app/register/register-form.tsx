@@ -1,7 +1,6 @@
 'use client';
 
-import { useActionState } from 'react';
-import { useFormStatus } from 'react-dom';
+import { useFormState, useFormStatus } from 'react-dom';
 import { registerAction, type AuthActionState } from '@/app/actions/auth-actions';
 import { Button } from '@/components/ui';
 
@@ -18,7 +17,7 @@ function SubmitButton() {
 }
 
 export function RegisterForm() {
-  const [state, formAction] = useActionState(registerAction, initialState);
+  const [state, formAction] = useFormState(registerAction, initialState);
 
   return (
     <form action={formAction} className="space-y-3">
