@@ -7,16 +7,79 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Role { GUEST CLIENT CONTRACTOR ADMIN }
-enum RequestStatus { DRAFT PENDING_MODERATION OPEN AWARDED CLOSED REJECTED }
-enum BidStatus { SUBMITTED FLAGGED WITHDRAWN ACCEPTED REJECTED }
-enum ModerationStatus { PENDING APPROVED FLAGGED REJECTED }
-enum SubscriptionStatus { ACTIVE PAST_DUE CANCELED TRIALING EXPIRED }
-enum NotificationType { NEW_BID BID_ACCEPTED REQUEST_STATUS MODERATION_WARNING SUBSCRIPTION_EXPIRED }
-enum Urgency { LOW MEDIUM HIGH EMERGENCY }
-enum ModerationTargetType { REQUEST BID MESSAGE PROFILE }
-enum MessageStatus { SENT FLAGGED BLOCKED }
-enum CreditTransactionType { TOPUP BID_SPEND REFUND ADJUSTMENT }
+enum Role {
+  GUEST
+  CLIENT
+  CONTRACTOR
+  ADMIN
+}
+
+enum RequestStatus {
+  DRAFT
+  PENDING_MODERATION
+  OPEN
+  AWARDED
+  CLOSED
+  REJECTED
+}
+
+enum BidStatus {
+  SUBMITTED
+  FLAGGED
+  WITHDRAWN
+  ACCEPTED
+  REJECTED
+}
+
+enum ModerationStatus {
+  PENDING
+  APPROVED
+  FLAGGED
+  REJECTED
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  TRIALING
+  EXPIRED
+}
+
+enum NotificationType {
+  NEW_BID
+  BID_ACCEPTED
+  REQUEST_STATUS
+  MODERATION_WARNING
+  SUBSCRIPTION_EXPIRED
+}
+
+enum Urgency {
+  LOW
+  MEDIUM
+  HIGH
+  EMERGENCY
+}
+
+enum ModerationTargetType {
+  REQUEST
+  BID
+  MESSAGE
+  PROFILE
+}
+
+enum MessageStatus {
+  SENT
+  FLAGGED
+  BLOCKED
+}
+
+enum CreditTransactionType {
+  TOPUP
+  BID_SPEND
+  REFUND
+  ADJUSTMENT
+}
 
 model User {
   id            String   @id @default(cuid())
