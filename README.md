@@ -63,6 +63,9 @@ npm run prisma:seed
 npm run dev
 ```
 
+### Windows / Prisma env note
+If Prisma reports `Environment variable not found: DATABASE_URL`, ensure `.env` exists in the project root and rerun commands from that same folder.
+
 ## Build for production
 ```bash
 npm run build
