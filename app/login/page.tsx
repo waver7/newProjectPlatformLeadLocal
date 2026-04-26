@@ -1,6 +1,31 @@
 import { loginAction } from '@/app/actions/auth-actions';
 import { Button, Card } from '@/components/ui';
 
-export default function LoginPage() {
-  return <Card className="max-w-md mx-auto"><h1 className="text-xl font-semibold mb-4">Login</h1><form action={loginAction} className="space-y-3"><input name="email" className="w-full border p-2 rounded" placeholder="Email" /><input name="password" type="password" className="w-full border p-2 rounded" placeholder="Password" /><Button type="submit">Sign in</Button></form></Card>;
+type LoginPageProps = {
+  searchParams?: {
+    error?: string;
+  };
+};
+
+const errorMessageByCode: Record<string, string> = {
+  invalid_credentials: 'Invalid email or password.',
+  account_created_login_failed: 'Account created. Please sign in manually.',
+  auth_failed: 'Authentication failed. Please try again.'
+};
+
+export default function LoginPage({ searchParams }: LoginPageProps) {
+  const errorCode = searchParams?.error;
+  const errorMessage = errorCode ? errorMessageByCode[errorCode] ?? errorMessageByCode.auth_failed : null;
+
+  return (
+    <Card className="mx-auto max-w-md">
+      <h1 className="mb-4 text-xl font-semibold">Login</h1>
+      {errorMessage ? <p className="mb-3 rounded-md bg-red-50 p-2 text-sm text-red-700">{errorMessage}</p> : null}
+      <form action={loginAction} className="space-y-3">
+        <input name="email" type="email" className="w-full rounded border p-2" placeholder="Email" required />
+        <input name="password" type="password" className="w-full rounded border p-2" placeholder="Password" required />
+        <Button type="submit">Sign in</Button>
+      </form>
+    </Card>
+  );
 }

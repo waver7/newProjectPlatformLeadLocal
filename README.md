@@ -63,6 +63,29 @@ npm run prisma:seed
 npm run dev
 ```
 
+### If `git pull` is blocked by local changes
+When you see `Your local changes to the following files would be overwritten by merge` (for example `package.json`), choose one safe path:
+
+```bash
+# Option A: keep your local edits
+ git stash
+ git pull
+ git stash pop
+```
+
+```bash
+# Option B: discard local edits and sync to remote branch
+ git reset --hard HEAD
+ git pull
+```
+
+```bash
+# Option C: commit local edits first
+ git add .
+ git commit -m "WIP local changes"
+ git pull --rebase
+```
+
 ### Windows / Prisma env note
 If Prisma reports `Environment variable not found: DATABASE_URL`, ensure `.env` exists in the project root and rerun commands from that same folder.
 
