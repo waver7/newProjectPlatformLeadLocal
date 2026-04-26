@@ -58,7 +58,7 @@ cp .env.example .env
 ```bash
 npm install
 npm run prisma:generate
-npm run prisma:migrate -- --name init
+npm run prisma:migrate
 npm run prisma:seed
 npm run dev
 ```
@@ -74,7 +74,8 @@ npm run start
 
 ## Migration steps
 - Edit schema at `prisma/schema.prisma`
-- Run `npm run prisma:migrate -- --name <migration_name>`
+- Apply committed migrations: `npm run prisma:migrate`
+- Create a new migration after schema changes: `npx prisma migrate dev --name <migration_name>`
 - Run `npm run prisma:generate`
 
 ## Deployment notes
