@@ -9,16 +9,23 @@ import { requestSchema } from '@/lib/schemas';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
-export async function createRequestAction(formData: FormData) {
+export type RequestActionState = {
+  error: string | null;
+  success?: string | null;
+};
+
+export async function createRequestAction(_prevState: RequestActionState, formData: FormData): Promise<RequestActionState> {
   const session = await auth();
-  if (!session?.user || session.user.role !== 'CLIENT') return { error: 'Unauthorized' };
+  if (!session?.user || session.user.role !== 'CLIENT') return { error: 'Unauthorized', success: null };
   const parsed = requestSchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Invalid input' };
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Invalid input', success: null };
 
   const settings = await getSettings();
   const cp = await prisma.clientProfile.findUnique({ where: { userId: session.user.id } });
-  if (!cp) return { error: 'Client profile missing' };
-  if (cp.freePostsUsed >= settings.freePostLimit) return { error: `Free post limit reached (${settings.freePostLimit}).` };
+  if (!cp) return { error: 'Client profile missing', success: null };
+  if (cp.freePostsUsed >= settings.freePostLimit) {
+    return { error: `Free post limit reached (${settings.freePostLimit}).`, success: null };
+  }
 
   const moderation = moderateText(`${parsed.data.title} ${parsed.data.description}`);
   const req = await prisma.request.create({
