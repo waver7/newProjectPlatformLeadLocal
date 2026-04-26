@@ -1,8 +1,12 @@
+import { createRequire } from 'module';
+
 type MailInput = { to: string; subject: string; text: string; html?: string };
 
 type MailTransporter = {
   sendMail: (input: Record<string, unknown>) => Promise<unknown>;
 };
+
+const requireModule = createRequire(import.meta.url);
 
 async function getTransporter(): Promise<MailTransporter | null> {
   const host = process.env.SMTP_HOST;
@@ -13,8 +17,7 @@ async function getTransporter(): Promise<MailTransporter | null> {
   if (!host || !user || !pass) return null;
 
   try {
-    const nodemailerModule = await import('nodemailer');
-    const nodemailer = nodemailerModule.default ?? nodemailerModule;
+    const nodemailer = requireModule('nodemailer');
 
     return nodemailer.createTransport({
       host,

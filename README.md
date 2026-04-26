@@ -54,6 +54,7 @@ cp .env.example .env
 ```
 2. Update `DATABASE_URL`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`.
 3. Optional for real emails: set `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` (otherwise emails are logged to console).
+4. If you want real SMTP delivery, install nodemailer manually: `npm i nodemailer@^7`.
 
 ## Install and run
 ```bash
