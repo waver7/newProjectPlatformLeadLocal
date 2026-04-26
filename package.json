@@ -23,7 +23,8 @@
     "react-dom": "^18.3.1",
     "sonner": "^1.7.4",
     "tailwind-merge": "^3.3.0",
-    "zod": "^3.24.4"
+    "zod": "^3.24.4",
+    "nodemailer": "^6.9.15"
   },
   "devDependencies": {
     "@types/node": "^20.16.7",

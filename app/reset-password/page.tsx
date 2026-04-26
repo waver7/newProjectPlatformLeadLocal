@@ -1,2 +1,16 @@
 import { Card } from '@/components/ui';
-export default function Page() { return <Card><h1 className="text-2xl font-bold">reset password</h1><p className="mt-3 text-slate-600">This page is included for launch readiness and SEO.</p></Card>; }
+import { ResetPasswordForm } from './reset-password-form';
+
+export default function ResetPasswordPage({ searchParams }: { searchParams?: { token?: string } }) {
+  const token = searchParams?.token ?? '';
+
+  return (
+    <Card className="mx-auto max-w-md">
+      <h1 className="text-2xl font-bold">Reset password</h1>
+      <p className="mt-2 text-sm text-slate-600">Set a new password for your account.</p>
+      <div className="mt-4">
+        <ResetPasswordForm token={token} />
+      </div>
+    </Card>
+  );
+}

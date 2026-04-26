@@ -31,3 +31,13 @@ export const messageSchema = z.object({
   conversationId: z.string(),
   content: z.string().min(2)
 });
+
+
+export const forgotPasswordSchema = z.object({
+  email: z.string().email()
+});
+
+export const resetPasswordSchema = z.object({
+  token: z.string().min(20),
+  password: z.string().min(8)
+});

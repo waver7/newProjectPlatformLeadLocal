@@ -53,6 +53,7 @@ prisma/
 cp .env.example .env
 ```
 2. Update `DATABASE_URL`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`.
+3. Optional for real emails: set `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` (otherwise emails are logged to console).
 
 ## Install and run
 ```bash
@@ -141,3 +142,10 @@ Password for all demo users: `Password123!`
 - Email verification/reset implementation
 - Reviews and contractor verification workflow
 - Saved leads and abuse-report workflow
+
+
+## Password reset and email notifications
+- `/forgot-password` sends a one-time reset link email.
+- `/reset-password?token=...` validates token and updates password.
+- New bids notify clients in-app and by email.
+- Awarded bids notify winning contractor in-app and by email (with client contact details).
