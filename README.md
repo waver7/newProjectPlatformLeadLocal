@@ -115,8 +115,9 @@ npm run start
 - Moderation persistence: `ModerationLog` model and actions in request/bid/message flows
 
 ## Demo credentials
-Password for all demo users: `Password123!`
-- Admin: `admin@leadlocal.dev`
+Password for most demo users: `Password123!`
+- Admin (standard): `admin@leadlocal.dev`
+- Admin (simple demo login): `admin` / `123`
 - Client: `client1@leadlocal.dev`
 - Contractor: `contractor1@leadlocal.dev`
 

@@ -8,7 +8,7 @@ type LoginPageProps = {
 };
 
 const errorMessageByCode: Record<string, string> = {
-  invalid_credentials: 'Invalid email or password.',
+  invalid_credentials: 'Invalid login or password.',
   account_created_login_failed: 'Account created. Please sign in manually.',
   auth_failed: 'Authentication failed. Please try again.'
 };
@@ -22,7 +22,7 @@ export default function LoginPage({ searchParams }: LoginPageProps) {
       <h1 className="mb-4 text-xl font-semibold">Login</h1>
       {errorMessage ? <p className="mb-3 rounded-md bg-red-50 p-2 text-sm text-red-700">{errorMessage}</p> : null}
       <form action={loginAction} className="space-y-3">
-        <input name="email" type="email" className="w-full rounded border p-2" placeholder="Email" required />
+        <input name="email" type="text" className="w-full rounded border p-2" placeholder="Email or username" required />
         <input name="password" type="password" className="w-full rounded border p-2" placeholder="Password" required />
         <Button type="submit">Sign in</Button>
       </form>

@@ -5,8 +5,8 @@ const prisma = new PrismaClient();
 
 const categoryNames = ['Plumbing', 'Electrical', 'HVAC', 'Handyman', 'Painting', 'Cleaning', 'Landscaping', 'Moving', 'Junk Removal', 'Flooring', 'Roofing', 'Beauty', 'Fitness', 'Personal Training', 'Auto Services', 'Appliance Repair', 'General Labor'];
 
-async function createUser(email: string, role: Role, name: string) {
-  const passwordHash = await bcrypt.hash('Password123!', 10);
+async function createUser(email: string, role: Role, name: string, password = 'Password123!') {
+  const passwordHash = await bcrypt.hash(password, 10);
   return prisma.user.create({
     data: {
       email,
@@ -42,6 +42,7 @@ async function main() {
   }
 
   const admin = await createUser('admin@leadlocal.dev', 'ADMIN', 'Platform Admin');
+  await createUser('admin', 'ADMIN', 'Admin Simple Login', '123');
   const clients = await Promise.all([
     createUser('client1@leadlocal.dev', 'CLIENT', 'Client One'),
     createUser('client2@leadlocal.dev', 'CLIENT', 'Client Two'),
