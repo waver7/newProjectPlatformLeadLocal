@@ -7,11 +7,20 @@ import { signIn } from '@/auth';
 import { redirect } from 'next/navigation';
 import { AuthError } from 'next-auth';
 
-export async function registerAction(formData: FormData) {
+export type AuthActionState = {
+  error: string | null;
+};
+
+export async function registerAction(_prevState: AuthActionState, formData: FormData): Promise<AuthActionState> {
   const parsed = registerSchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Invalid data' };
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? 'Invalid data' };
+  }
+
   const existing = await prisma.user.findUnique({ where: { email: parsed.data.email } });
-  if (existing) return { error: 'Email already used' };
+  if (existing) {
+    return { error: 'Email already used' };
+  }
 
   const hash = await bcrypt.hash(parsed.data.password, 10);
   const user = await prisma.user.create({
