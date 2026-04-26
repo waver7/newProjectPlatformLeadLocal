@@ -1,0 +1,317 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  GUEST
+  CLIENT
+  CONTRACTOR
+  ADMIN
+}
+
+enum RequestStatus {
+  DRAFT
+  PENDING_MODERATION
+  OPEN
+  AWARDED
+  CLOSED
+  REJECTED
+}
+
+enum BidStatus {
+  SUBMITTED
+  FLAGGED
+  WITHDRAWN
+  ACCEPTED
+  REJECTED
+}
+
+enum ModerationStatus {
+  PENDING
+  APPROVED
+  FLAGGED
+  REJECTED
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  TRIALING
+  EXPIRED
+}
+
+enum NotificationType {
+  NEW_BID
+  BID_ACCEPTED
+  REQUEST_STATUS
+  MODERATION_WARNING
+  SUBSCRIPTION_EXPIRED
+}
+
+enum Urgency {
+  LOW
+  MEDIUM
+  HIGH
+  EMERGENCY
+}
+
+enum ModerationTargetType {
+  REQUEST
+  BID
+  MESSAGE
+  PROFILE
+}
+
+enum MessageStatus {
+  SENT
+  FLAGGED
+  BLOCKED
+}
+
+enum CreditTransactionType {
+  TOPUP
+  BID_SPEND
+  REFUND
+  ADJUSTMENT
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  passwordHash  String
+  role          Role
+  isActive      Boolean  @default(true)
+  emailVerified DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  profile             Profile?
+  clientProfile       ClientProfile?
+  contractorProfile   ContractorProfile?
+  requests            Request[]
+  bids                Bid[]
+  messages            Message[]
+  notifications       Notification[]
+  subscriptions       Subscription[]
+  creditWallet        CreditWallet?
+  moderationLogs      ModerationLog[] @relation("ActorModerationLogs")
+}
+
+model Profile {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  fullName  String
+  avatarUrl String?
+  phone     String?
+  city      String?
+  state     String?
+  bio       String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ClientProfile {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  organization   String?
+  phonePrivate   String
+  emailPrivate   String
+  freePostsUsed  Int      @default(0)
+  freePostsPeriod String  @default("TOTAL")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ContractorProfile {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  businessName String
+  serviceArea  String
+  bio          String
+  website      String?
+  phone        String
+  email        String
+  isVerified   Boolean  @default(false)
+  rating       Float    @default(0)
+  totalReviews Int      @default(0)
+  categories   Category[] @relation("ContractorCategories")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Category {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String   @unique
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  requests    Request[]
+  contractors ContractorProfile[] @relation("ContractorCategories")
+}
+
+model Request {
+  id               String           @id @default(cuid())
+  clientId         String
+  categoryId       String
+  title            String
+  description      String
+  city             String
+  zipCode          String?
+  urgency          Urgency          @default(MEDIUM)
+  budget           Float?
+  preferredDate    DateTime?
+  status           RequestStatus    @default(PENDING_MODERATION)
+  moderationStatus ModerationStatus @default(PENDING)
+  rejectionReason  String?
+  awardedBidId     String?          @unique
+  isSoftDeleted    Boolean          @default(false)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  client           User             @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  category         Category         @relation(fields: [categoryId], references: [id])
+  attachments      RequestAttachment[]
+  bids             Bid[]
+  conversationThreads Conversation[]
+  moderationLogs   ModerationLog[]
+}
+
+model RequestAttachment {
+  id        String   @id @default(cuid())
+  requestId String
+  fileName  String
+  fileUrl   String
+  mimeType  String?
+  createdAt DateTime @default(now())
+  request   Request  @relation(fields: [requestId], references: [id], onDelete: Cascade)
+}
+
+model Bid {
+  id               String           @id @default(cuid())
+  requestId        String
+  contractorId     String
+  amount           Float
+  message          String
+  estimatedTimeline String
+  status           BidStatus        @default(SUBMITTED)
+  moderationStatus ModerationStatus @default(PENDING)
+  isWinner         Boolean          @default(false)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  request          Request          @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  contractor       User             @relation(fields: [contractorId], references: [id], onDelete: Cascade)
+  conversation     Conversation?
+  moderationLogs   ModerationLog[]
+  @@unique([requestId, contractorId])
+}
+
+model Conversation {
+  id           String   @id @default(cuid())
+  requestId    String
+  bidId        String   @unique
+  clientId     String
+  contractorId String
+  isAwarded    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  request      Request  @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  bid          Bid      @relation(fields: [bidId], references: [id], onDelete: Cascade)
+  messages     Message[]
+}
+
+model Message {
+  id               String           @id @default(cuid())
+  conversationId   String
+  senderId         String
+  content          String
+  status           MessageStatus    @default(SENT)
+  moderationStatus ModerationStatus @default(PENDING)
+  createdAt        DateTime         @default(now())
+  conversation     Conversation     @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender           User             @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  moderationLogs   ModerationLog[]
+}
+
+model Subscription {
+  id          String             @id @default(cuid())
+  userId      String
+  status      SubscriptionStatus
+  planCode    String
+  amountCents Int
+  currency    String   @default("USD")
+  startsAt    DateTime
+  endsAt      DateTime
+  provider    String   @default("mock")
+  providerRef String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model CreditWallet {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  balance      Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions CreditTransaction[]
+}
+
+model CreditTransaction {
+  id        String                @id @default(cuid())
+  walletId  String
+  amount    Int
+  type      CreditTransactionType
+  note      String?
+  createdAt DateTime @default(now())
+  wallet    CreditWallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  body      String
+  href      String?
+  isRead    Boolean @default(false)
+  createdAt DateTime @default(now())
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ModerationLog {
+  id         String               @id @default(cuid())
+  targetType ModerationTargetType
+  requestId  String?
+  bidId      String?
+  messageId  String?
+  actorUserId String?
+  status     ModerationStatus
+  reason     String
+  createdAt  DateTime @default(now())
+  request    Request? @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  bid        Bid?     @relation(fields: [bidId], references: [id], onDelete: Cascade)
+  message    Message? @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  actorUser  User?    @relation("ActorModerationLogs", fields: [actorUserId], references: [id], onDelete: SetNull)
+}
+
+model AdminSettings {
+  id                           String @id @default(cuid())
+  freePostLimit                Int    @default(5)
+  freePostLimitPeriod          String @default("TOTAL")
+  requireContractorSubscription Boolean @default(true)
+  requireBidCredits            Boolean @default(false)
+  bidCreditCost                Int @default(1)
+  createdAt                    DateTime @default(now())
+  updatedAt                    DateTime @updatedAt
+}
