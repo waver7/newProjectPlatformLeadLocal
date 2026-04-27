@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Urgency } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { Badge, Card } from '@/components/ui';
 
@@ -7,15 +8,34 @@ export default async function RequestsPage({
 }: {
   searchParams: { q?: string; city?: string; category?: string; urgency?: string; min?: string; max?: string }
 }) {
+  const normalizedQuery = searchParams.q?.trim();
+  const normalizedCity = searchParams.city?.trim();
+  const normalizedMin = searchParams.min ? Number(searchParams.min) : undefined;
+  const normalizedMax = searchParams.max ? Number(searchParams.max) : undefined;
+  const validUrgency = Object.values(Urgency).includes(searchParams.urgency as Urgency)
+    ? (searchParams.urgency as Urgency)
+    : undefined;
+
   const requests = await prisma.request.findMany({
     where: {
       status: 'OPEN',
       moderationStatus: 'APPROVED',
-      title: searchParams.q ? { contains: searchParams.q, mode: 'insensitive' } : undefined,
-      city: searchParams.city ? { contains: searchParams.city, mode: 'insensitive' } : undefined,
-      urgency: searchParams.urgency as any,
+      OR: normalizedQuery
+        ? [
+            { title: { contains: normalizedQuery, mode: 'insensitive' } },
+            { description: { contains: normalizedQuery, mode: 'insensitive' } }
+          ]
+        : undefined,
+      city: normalizedCity ? { contains: normalizedCity, mode: 'insensitive' } : undefined,
+      urgency: validUrgency,
       category: searchParams.category ? { slug: searchParams.category } : undefined,
-      budget: searchParams.min || searchParams.max ? { gte: searchParams.min ? Number(searchParams.min) : undefined, lte: searchParams.max ? Number(searchParams.max) : undefined } : undefined
+      budget:
+        Number.isFinite(normalizedMin) || Number.isFinite(normalizedMax)
+          ? {
+              gte: Number.isFinite(normalizedMin) ? normalizedMin : undefined,
+              lte: Number.isFinite(normalizedMax) ? normalizedMax : undefined
+            }
+          : undefined
     },
     include: { category: true, _count: { select: { bids: true } } },
     orderBy: { createdAt: 'desc' }
@@ -46,6 +66,13 @@ export default async function RequestsPage({
           <button className="rounded bg-slate-900 px-4 text-white">Filter</button>
         </div>
       </form>
+      {(normalizedQuery || normalizedCity || searchParams.category || validUrgency || searchParams.min || searchParams.max) ? (
+        <div>
+          <Link href="/requests" className="text-sm text-slate-600 underline">
+            Clear filters
+          </Link>
+        </div>
+      ) : null}
 
       <div className="space-y-3">
         {requests.map((r) => (

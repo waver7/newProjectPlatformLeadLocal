@@ -46,7 +46,9 @@ export default async function HomePage() {
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           {categories.map((c) => (
             <Card key={c.id}>
-              <p className="font-medium">{c.name}</p>
+              <Link href={`/requests?category=${c.slug}`} className="font-medium underline">
+                {c.name}
+              </Link>
             </Card>
           ))}
         </div>

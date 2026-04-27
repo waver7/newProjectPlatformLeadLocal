@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
 import { Card } from '@/components/ui';
 
@@ -29,6 +30,9 @@ export default async function CategoriesPage() {
             <p className="text-2xl">{iconMap[c.slug] || '🧰'}</p>
             <h2 className="mt-2 font-semibold">{c.name}</h2>
             <p className="text-sm text-slate-600">{c.description || 'Local professionals available for this category.'}</p>
+            <Link href={`/requests?category=${c.slug}`} className="mt-3 inline-block text-sm underline">
+              Browse jobs
+            </Link>
           </Card>
         ))}
       </div>
