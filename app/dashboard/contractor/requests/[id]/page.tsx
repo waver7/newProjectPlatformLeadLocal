@@ -18,6 +18,7 @@ export default async function ContractorRequestDetail({ params }: { params: { id
 
   const myBid = req.bids[0];
   const isWinningBid = !!myBid && req.awardedBidId === myBid.id;
+  const shouldRevealClientContact = isWinningBid && req.status !== 'OPEN';
 
   return (
     <div className="space-y-3">
@@ -25,7 +26,7 @@ export default async function ContractorRequestDetail({ params }: { params: { id
         <h1 className="text-xl font-bold">{req.title}</h1>
         <p>{req.description}</p>
         <p className="mt-2 text-sm">Status: {req.status}</p>
-        {!isWinningBid ? <p className="text-sm">Client contact hidden until bid award.</p> : null}
+        {!shouldRevealClientContact ? <p className="text-sm">Client contact hidden until bid award.</p> : null}
       </Card>
 
       {req.status === 'OPEN' && !myBid ? (
@@ -37,7 +38,7 @@ export default async function ContractorRequestDetail({ params }: { params: { id
 
       {req.status === 'OPEN' && myBid ? <Card>You already bid on this request.</Card> : null}
 
-      {req.status === 'AWARDED' && isWinningBid ? (
+      {shouldRevealClientContact ? (
         <Card>
           <h2 className="mb-2 font-semibold">You won this request 🎉</h2>
           <p className="text-sm">Contact details are now visible:</p>
@@ -46,7 +47,7 @@ export default async function ContractorRequestDetail({ params }: { params: { id
         </Card>
       ) : null}
 
-      {req.status === 'AWARDED' && !isWinningBid ? <Card>This request has been awarded to another contractor.</Card> : null}
+      {req.status !== 'OPEN' && !isWinningBid ? <Card>This request has been awarded to another contractor.</Card> : null}
     </div>
   );
 }
