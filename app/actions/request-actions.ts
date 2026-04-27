@@ -8,11 +8,19 @@ import { prisma } from '@/lib/prisma';
 import { requestSchema } from '@/lib/schemas';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { z } from 'zod';
 
 export type RequestActionState = {
   error: string | null;
   success?: string | null;
 };
+
+const editRequestSchema = z.object({
+  id: z.string().min(1),
+  title: z.string().min(5),
+  city: z.string().min(2),
+  description: z.string().min(20)
+});
 
 export async function createRequestAction(_prevState: RequestActionState, formData: FormData): Promise<RequestActionState> {
   const session = await auth();
@@ -55,6 +63,39 @@ export async function createRequestAction(_prevState: RequestActionState, formDa
       freePostsUsed: { increment: 1 }
     }
   });
+  redirect(`/dashboard/client/requests/${req.id}`);
+}
+
+export async function updateRequestAction(_prevState: RequestActionState, formData: FormData): Promise<RequestActionState> {
+  const session = await auth();
+  if (!session?.user || session.user.role !== 'CLIENT') return { error: 'Unauthorized', success: null };
+
+  const parsed = editRequestSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Invalid input', success: null };
+
+  const req = await prisma.request.findUnique({ where: { id: parsed.data.id } });
+  if (!req || req.clientId !== session.user.id) return { error: 'Request not found', success: null };
+  if (!['OPEN', 'PENDING_MODERATION', 'DRAFT'].includes(req.status)) {
+    return { error: 'Only open/pending requests can be edited.', success: null };
+  }
+
+  const moderation = moderateText(`${parsed.data.title} ${parsed.data.description}`);
+  await prisma.request.update({
+    where: { id: req.id },
+    data: {
+      title: parsed.data.title,
+      city: parsed.data.city,
+      description: parsed.data.description,
+      status: moderation.status === 'FLAGGED' ? 'PENDING_MODERATION' : moderation.status === 'REJECTED' ? 'REJECTED' : 'OPEN',
+      moderationStatus: moderation.status,
+      moderationLogs: {
+        create: { targetType: 'REQUEST', status: moderation.status, reason: moderation.reason, actorUserId: session.user.id }
+      }
+    }
+  });
+
+  revalidatePath(`/dashboard/client/requests/${req.id}`);
+  revalidatePath(`/dashboard/client/requests/${req.id}/edit`);
   redirect(`/dashboard/client/requests/${req.id}`);
 }
 
