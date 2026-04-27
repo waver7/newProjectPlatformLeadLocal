@@ -3,8 +3,8 @@ import { Nav } from '@/components/nav';
 import { Toaster } from 'sonner';
 
 export const metadata = {
-  title: 'LeadLocal | Local services bidding platform',
-  description: 'Post anything you need. Get bids from local contractors.'
+  title: 'LocalTaskHub | Find trusted local help for any job',
+  description: 'Post a task, compare offers, and choose the right local professional.'
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
