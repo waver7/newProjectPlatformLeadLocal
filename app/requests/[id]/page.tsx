@@ -4,6 +4,18 @@ import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { Card, UrgencyBadge, StatusBadge, LinkButton } from '@/components/ui';
 
+function timeAgo(date: Date): string {
+  const secs = Math.floor((Date.now() - date.getTime()) / 1000);
+  if (secs < 60) return 'just now';
+  const mins = Math.floor(secs / 60);
+  if (mins < 60) return `${mins} minute${mins !== 1 ? 's' : ''} ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours} hour${hours !== 1 ? 's' : ''} ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `${days} day${days !== 1 ? 's' : ''} ago`;
+  return date.toLocaleDateString();
+}
+
 export default async function RequestDetail({ params }: { params: { id: string } }) {
   const [req, session] = await Promise.all([
     prisma.request.findUnique({
@@ -28,7 +40,7 @@ export default async function RequestDetail({ params }: { params: { id: string }
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h1 className="text-2xl font-bold text-slate-900">{req.title}</h1>
-            <p className="mt-1 text-sm text-slate-500">{req.city} · {req.category.name}</p>
+            <p className="mt-1 text-sm text-slate-500">{req.city}{req.state ? `, ${req.state}` : ''} · {req.category.name}</p>
           </div>
           <div className="flex items-center gap-2">
             <UrgencyBadge urgency={req.urgency} />
@@ -42,7 +54,7 @@ export default async function RequestDetail({ params }: { params: { id: string }
           {req.budget && <span>Budget: <strong className="text-slate-900">${req.budget}</strong></span>}
           {req.preferredDate && <span>Preferred date: <strong className="text-slate-900">{new Date(req.preferredDate).toLocaleDateString()}</strong></span>}
           <span>{req._count.bids} bid{req._count.bids !== 1 ? 's' : ''} received</span>
-          <span>Posted {new Date(req.createdAt).toLocaleDateString()}</span>
+          <span>Posted {timeAgo(new Date(req.createdAt))}</span>
         </div>
       </Card>
 

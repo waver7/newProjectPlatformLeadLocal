@@ -3,6 +3,7 @@
 import { auth } from '@/auth';
 import { getSettings } from '@/lib/data';
 import { sendContractorAwardEmail } from '@/lib/email';
+import { lookupZip } from '@/lib/geo';
 import { moderateText } from '@/lib/moderation';
 import { prisma } from '@/lib/prisma';
 import { requestSchema } from '@/lib/schemas';
@@ -61,6 +62,8 @@ export async function createRequestAction(_prevState: RequestActionState, formDa
   // REJECTED = prohibited keyword → send to admin review instead of auto-rejecting
   const requestStatus = moderation.status === 'APPROVED' ? 'OPEN' : 'PENDING_MODERATION';
 
+  const coords = parsed.data.zipCode ? lookupZip(parsed.data.zipCode) : null;
+
   const req = await prisma.request.create({
     data: {
       clientId: session.user.id,
@@ -68,7 +71,10 @@ export async function createRequestAction(_prevState: RequestActionState, formDa
       title: parsed.data.title,
       description: parsed.data.description,
       city: parsed.data.city,
+      state: parsed.data.state,
       zipCode: parsed.data.zipCode,
+      latitude: coords?.lat ?? undefined,
+      longitude: coords?.lon ?? undefined,
       urgency: parsed.data.urgency,
       budget: parsed.data.budget,
       preferredDate: parsed.data.preferredDate ? new Date(parsed.data.preferredDate) : undefined,
