@@ -8,6 +8,7 @@ import { redirect } from 'next/navigation';
 import { AuthError } from 'next-auth';
 import { consumePasswordResetToken, issuePasswordResetToken } from '@/lib/password-reset';
 import { sendPasswordResetEmail } from '@/lib/email';
+import { createTrialSubscription } from '@/lib/billing';
 
 export type AuthActionState = {
   error: string | null;
@@ -18,6 +19,12 @@ export async function registerAction(_prevState: AuthActionState, formData: Form
   const parsed = registerSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? 'Invalid data', success: null };
+  }
+
+  // Require agreement to Terms & Conditions
+  const agreedToTerms = formData.get('agreedToTerms');
+  if (agreedToTerms !== 'on' && agreedToTerms !== 'true') {
+    return { error: 'You must agree to the Terms & Conditions to create an account.', success: null };
   }
 
   const existing = await prisma.user.findUnique({ where: { email: parsed.data.email } });
@@ -31,6 +38,7 @@ export async function registerAction(_prevState: AuthActionState, formData: Form
       email: parsed.data.email,
       passwordHash: hash,
       role: parsed.data.role,
+      agreedToTermsAt: new Date(),
       profile: { create: { fullName: parsed.data.fullName } },
       clientProfile:
         parsed.data.role === 'CLIENT'
@@ -51,6 +59,11 @@ export async function registerAction(_prevState: AuthActionState, formData: Form
       creditWallet: { create: {} }
     }
   });
+
+  // Auto-create 1-day free trial for new clients
+  if (user.role === 'CLIENT') {
+    await createTrialSubscription(user.id);
+  }
 
   // Auto sign-in after registration
   try {

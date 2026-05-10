@@ -1,153 +1,318 @@
-# LeadLocal MVP
+# LeadLocal
 
-LeadLocal is a production-style MVP local lead marketplace where clients post service requests for free and contractors pay subscription to bid.
+**Connecting Ohio homeowners with trusted local contractors.**
 
-## Tech stack
-- Next.js 14 App Router + TypeScript
-- Tailwind CSS
-- Prisma ORM + PostgreSQL
-- NextAuth (Credentials provider)
-- Zod validation
-- Mock billing abstraction (Stripe-ready service layer)
+LeadLocal is a production-ready local lead marketplace that makes it easy for homeowners and property managers to post service requests and receive competitive bids from vetted contractors — all within their community.
 
-## Core architecture
-- `app/` pages + server actions
-- `lib/` business logic (auth, billing, moderation, permissions)
-- `prisma/schema.prisma` complete data model
-- `prisma/seed.ts` demo data for all key flows
+---
 
-## Features implemented
-- Public marketing + SEO pages
-- Auth (register/login/logout)
-- Role-based dashboards (client/contractor/admin)
-- Client request posting with free-post limit enforced server-side
-- Contractor bidding with required active subscription
-- Award flow with single winner enforcement
-- Backend contact reveal only for winning contractor
-- Messaging with contact-sharing moderation block before award
-- Admin moderation + users + settings
-- In-app notifications
-- Configurable free posting and subscription requirements
+## Mission
 
-## Folder structure
-```txt
-app/
-  actions/
-  dashboard/
-    admin/
-    client/
-    contractor/
-  api/auth/[...nextauth]/
-  requests/
-  pricing/ categories/ about/ contact/ terms/ privacy/ guidelines/
-components/
-lib/
-prisma/
-  schema.prisma
-  seed.ts
+We believe local service work should be straightforward: homeowners describe what they need, contractors compete on merit and price, and everyone gets a fair deal. LeadLocal removes the friction of cold-calling, guessing on referrals, and worrying about contact-info privacy. We start in Ohio because we know the market — and we'll grow from there.
+
+**Core values:**
+- **Privacy first** — client contact info is revealed only to the contractor they choose.
+- **Fairness** — contractors pay a single flat subscription, no per-lead surprise fees.
+- **Transparency** — all content is moderated; all awards are final and auditable.
+
+---
+
+## Feature Highlights
+
+| Feature | Details |
+|---------|---------|
+| Service request posting | Title, description, category, location (city + ZIP), urgency, budget, preferred date |
+| Bid system | Contractors bid with price, timeline, and message; clients award one winner |
+| Contact protection | Phone/email hidden until bid is awarded, then revealed only to the winner |
+| Content moderation | Auto-detect contact info (form error) and prohibited keywords (admin review queue) |
+| Subscriptions | Stripe-powered recurring billing; 1-day free trial for new clients |
+| ZIP proximity search | Search requests within N miles using Haversine formula over 200+ Ohio ZIPs |
+| Secure messaging | In-platform chat per bid; contact sharing blocked until award |
+| Admin panel | Moderation queue, user management, configurable platform settings |
+| Password reset | Secure token-based reset flow with expiring links |
+| Login protection | 5-attempt lockout for 15 minutes; constant-time comparison against unknown users |
+| Unit tested | Jest test suite covering moderation, geo, schemas, and billing helpers |
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Framework | Next.js 14 (App Router) + TypeScript |
+| Styling | Tailwind CSS 3 with custom brand palette |
+| Database | PostgreSQL via Prisma ORM |
+| Auth | NextAuth v5 beta (Credentials provider, JWT sessions) |
+| Payments | Stripe (Checkout + Billing Portal + Webhooks) |
+| Validation | Zod |
+| Testing | Jest + ts-jest |
+| Email | Nodemailer (SMTP) with console fallback |
+
+---
+
+## Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    Next.js App Router                    │
+│                                                         │
+│  Public pages    Auth pages    Dashboard (role-based)   │
+│  /requests       /login        /dashboard/client        │
+│  /pricing        /register     /dashboard/contractor    │
+│  /terms          /forgot-…     /dashboard/admin         │
+│  /privacy                                               │
+└────────────────────────┬────────────────────────────────┘
+                         │ Server Actions
+┌────────────────────────▼────────────────────────────────┐
+│                  Business Logic (lib/)                   │
+│                                                         │
+│  auth.ts        billing.ts     moderation.ts            │
+│  geo.ts         permissions.ts stripe.ts                │
+│  data.ts        email.ts       password-reset.ts        │
+└────────────────────────┬────────────────────────────────┘
+                         │ Prisma ORM
+┌────────────────────────▼────────────────────────────────┐
+│                     PostgreSQL                          │
+│                                                         │
+│  User  Profile  ClientProfile  ContractorProfile        │
+│  Request  Bid  Conversation  Message                    │
+│  Subscription  CreditWallet  Notification               │
+│  AdminSettings  ModerationLog  PasswordResetToken       │
+└─────────────────────────────────────────────────────────┘
+                         │
+┌────────────────────────▼────────────────────────────────┐
+│                  External Services                      │
+│                                                         │
+│  Stripe (payments)     SMTP server (email)              │
+└─────────────────────────────────────────────────────────┘
 ```
 
-## Environment setup
-1. Copy env file:
+### Key design patterns
+
+- **Server actions** — all mutations go through `'use server'` actions, never client-side fetch.
+- **Atomic DB operations** — race conditions (free post limit, bid award) use single `updateMany` with WHERE conditions.
+- **Role guards** — `requireRole(['CLIENT'])` at the top of every page/action; no route trusts client-supplied identity.
+- **Moderation pipeline** — `moderateText()` returns APPROVED / FLAGGED / REJECTED; FLAGGED gives the user an error to self-correct, REJECTED queues for admin review.
+
+---
+
+## Repository Structure
+
+```
+├── app/
+│   ├── actions/          # Server actions (auth, requests, bids, billing, …)
+│   ├── api/
+│   │   ├── auth/         # NextAuth handler
+│   │   └── stripe/webhook/  # Stripe webhook receiver
+│   ├── dashboard/
+│   │   ├── admin/        # Admin panel (moderation, users, settings)
+│   │   ├── client/       # Client dashboard (requests, billing, messaging)
+│   │   └── contractor/   # Contractor dashboard (jobs, bids, profile, billing)
+│   ├── requests/         # Public request list + detail
+│   ├── pricing/          # Pricing page
+│   ├── terms/            # Terms & Conditions
+│   ├── privacy/          # Privacy Policy
+│   └── …                 # Other public pages
+├── components/
+│   ├── ui.tsx            # Design system (Button, Card, Badge, …)
+│   └── nav.tsx           # Site navigation
+├── lib/
+│   ├── auth.ts           # NextAuth config + login rate-limiting
+│   ├── billing.ts        # Subscription helpers + Stripe customer management
+│   ├── geo.ts            # Ohio ZIP → lat/lon + Haversine distance
+│   ├── moderation.ts     # Contact-info and keyword detection
+│   ├── permissions.ts    # requireRole() guard
+│   ├── stripe.ts         # Stripe client + plan definitions
+│   └── schemas.ts        # Zod validation schemas
+├── prisma/
+│   ├── schema.prisma     # Full data model
+│   ├── migrations/       # SQL migration history
+│   └── seed.ts           # Demo data for all roles
+├── __tests__/
+│   └── lib/              # Unit tests (Jest + ts-jest)
+├── docs/
+│   └── TESTING.md        # Testing guide
+└── SECURITY.md           # Security policy and architecture
+```
+
+---
+
+## Quick Start
+
+### Prerequisites
+- Node.js 18+
+- PostgreSQL database (local or hosted — Railway/Neon/Render/Supabase all work)
+
+### 1. Clone and install
+
+```bash
+git clone https://github.com/waver7/newProjectPlatformLeadLocal.git
+cd newProjectPlatformLeadLocal
+npm install
+```
+
+### 2. Configure environment
+
 ```bash
 cp .env.example .env
 ```
-2. Update `DATABASE_URL`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`.
-3. Optional for real emails: set `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` (otherwise emails are logged to console).
-4. If you want real SMTP delivery, install nodemailer manually: `npm i nodemailer@^7`.
 
-## Install and run
+Edit `.env`:
+
+```env
+# Required
+DATABASE_URL="postgresql://user:password@localhost:5432/leadlocal"
+NEXTAUTH_SECRET="generate-with-openssl-rand-base64-32"
+NEXTAUTH_URL="http://localhost:3000"
+
+# Stripe — leave blank for mock/dev mode (subscriptions work without real payment)
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
+STRIPE_PRICE_CLIENT_STARTER=
+STRIPE_PRICE_CLIENT_PRO=
+STRIPE_PRICE_CONTRACTOR_PRO=
+
+# Email — leave blank to use console fallback
+SMTP_HOST=
+SMTP_PORT=587
+SMTP_USER=
+SMTP_PASS=
+MAIL_FROM="noreply@leadlocal.io"
+```
+
+### 3. Set up database and seed
+
 ```bash
-npm install
 npm run db:setup
+# Runs: prisma generate → prisma migrate deploy → prisma seed
+```
+
+### 4. Run development server
+
+```bash
 npm run dev
+# → http://localhost:3000
 ```
 
-### If `git pull` is blocked by local changes
-When you see `Your local changes to the following files would be overwritten by merge` (for example `package.json`), choose one safe path:
+---
+
+## Demo Accounts
+
+| Role | Email / Username | Password |
+|------|-----------------|----------|
+| Admin | `admin@leadlocal.dev` | `Password123!` |
+| Admin (quick) | `admin` | `123` |
+| Client | `client.demo` | `123456` |
+| Contractor (active sub) | `contractor.demo` | `123456` |
+
+---
+
+## Payment Gate (Stripe)
+
+LeadLocal uses Stripe for recurring subscriptions. In **development** (no `STRIPE_SECRET_KEY`), subscriptions are created in the database without real payment — the checkout button still redirects back immediately with a success state.
+
+### Plans
+
+| Plan | Price | Quota | Who |
+|------|-------|-------|-----|
+| Free Trial | $0 | 1 request / 1 day | New clients (auto-created on signup) |
+| Client Starter | $5/month | 10 requests/month | Clients |
+| Client Pro | $10/month | 100 requests/month | Clients |
+| Contractor Pro | $10/month | Unlimited bids | Contractors |
+
+### Stripe setup (production)
+
+1. Create products and prices in the Stripe dashboard.
+2. Copy the price IDs into your environment variables.
+3. Set up a webhook endpoint pointing to `https://your-domain.com/api/stripe/webhook`.
+4. Add the `STRIPE_WEBHOOK_SECRET` (from Stripe CLI or dashboard).
+5. Enable **Customer Portal** in the Stripe dashboard for self-service management.
+
+### Testing webhooks locally
 
 ```bash
-# Option A: keep your local edits
- git stash
- git pull
- git stash pop
+stripe listen --forward-to localhost:3000/api/stripe/webhook
+stripe trigger checkout.session.completed
 ```
+
+---
+
+## Unit Tests
 
 ```bash
-# Option B: discard local edits and sync to remote branch
- git reset --hard HEAD
- git pull
+npm test                  # run all tests
+npm run test:coverage     # with coverage report
 ```
 
-```bash
-# Option C: commit local edits first
- git add .
- git commit -m "WIP local changes"
- git pull --rebase
-```
+See [`docs/TESTING.md`](docs/TESTING.md) for the full testing guide.
 
-### Windows / Prisma env note
-If Prisma reports `Environment variable not found: DATABASE_URL`, ensure `.env` exists in the project root and rerun commands from that same folder.
+---
 
-## Build for production
+## Security
+
+See [`SECURITY.md`](SECURITY.md) for the full security policy, including vulnerability reporting, implementation details, and the environment variable checklist.
+
+---
+
+## Running in Production
+
 ```bash
 npm run build
-npm run start
+npm start
 ```
 
-## Migration steps
-- Edit schema at `prisma/schema.prisma`
-- Apply committed migrations: `npm run prisma:migrate`
-- Create a new migration after schema changes: `npx prisma migrate dev --name <migration_name>`
-- Run `npm run prisma:generate`
+### Deployment (Vercel + external Postgres)
 
-## Deployment notes
-- Vercel + external Postgres (Railway/Neon/Render)
-- Set env vars in host settings
-- Run migration in CI/CD before serving traffic
-- Billing service already isolated in `lib/billing.ts`, replace mock with Stripe webhooks + checkout later.
+1. Push to GitHub.
+2. Import the project in Vercel.
+3. Set all environment variables in the Vercel dashboard.
+4. Add a build step to run migrations:
+   ```
+   npx prisma migrate deploy && next build
+   ```
 
-## Billing and moderation logic locations
-- Billing rules: `lib/billing.ts` and bid gate in `app/actions/bid-actions.ts`
-- Moderation rules: `lib/moderation.ts`
-- Moderation persistence: `ModerationLog` model and actions in request/bid/message flows
+---
 
-## Demo credentials
-Password for most demo users: `Password123!`
-- Admin (standard): `admin@leadlocal.dev`
-- Admin (simple demo login): `admin` / `123`
-- Client: `client1@leadlocal.dev`
-- Client (simple): `client.demo` / `123456`
-- Contractor: `contractor1@leadlocal.dev`
-- Contractor (simple, active sub): `contractor.demo` / `123456`
+## Database Migrations
 
-## Route map
+```bash
+# Apply all pending migrations (production / CI)
+npm run prisma:migrate
+
+# Create a new migration after schema changes (dev)
+npx prisma migrate dev --name describe_your_change
+
+# Regenerate Prisma client after schema change
+npm run prisma:generate
+```
+
+---
+
+## Routes Reference
+
 ### Public
-`/`, `/pricing`, `/categories`, `/requests`, `/requests/[id]`, `/about`, `/contact`, `/terms`, `/privacy`, `/guidelines`
+`/` · `/pricing` · `/categories` · `/requests` · `/requests/[id]` · `/about` · `/contact` · `/terms` · `/privacy` · `/guidelines`
 
 ### Auth
-`/login`, `/register`, `/forgot-password`, `/reset-password`
+`/login` · `/register` · `/forgot-password` · `/reset-password`
 
 ### Client dashboard
-`/dashboard/client`, `/dashboard/client/requests`, `/dashboard/client/requests/new`, `/dashboard/client/requests/[id]`, `/dashboard/client/requests/[id]/edit`
+`/dashboard/client` · `/dashboard/client/requests` · `/dashboard/client/requests/new` · `/dashboard/client/requests/[id]` · `/dashboard/client/requests/[id]/edit` · `/dashboard/client/billing` · `/dashboard/client/conversation/[convId]`
 
 ### Contractor dashboard
-`/dashboard/contractor`, `/dashboard/contractor/requests`, `/dashboard/contractor/requests/[id]`, `/dashboard/contractor/bids`, `/dashboard/contractor/profile`, `/dashboard/contractor/billing`
+`/dashboard/contractor` · `/dashboard/contractor/requests` · `/dashboard/contractor/requests/[id]` · `/dashboard/contractor/bids` · `/dashboard/contractor/profile` · `/dashboard/contractor/billing` · `/dashboard/contractor/conversation/[convId]`
 
 ### Admin
-`/dashboard/admin`, `/dashboard/admin/users`, `/dashboard/admin/requests`, `/dashboard/admin/bids`, `/dashboard/admin/messages`, `/dashboard/admin/moderation`, `/dashboard/admin/settings`
+`/dashboard/admin` · `/dashboard/admin/users` · `/dashboard/admin/requests` · `/dashboard/admin/bids` · `/dashboard/admin/messages` · `/dashboard/admin/moderation` · `/dashboard/admin/settings`
 
-## Future improvements
-- Stripe checkout + webhook lifecycle
-- Rate limiter integration (Upstash/Redis)
-- File upload for request attachments
-- Email verification/reset implementation
-- Reviews and contractor verification workflow
-- Saved leads and abuse-report workflow
+### API
+`/api/auth/[...nextauth]` · `/api/stripe/webhook`
 
+---
 
-## Password reset and email notifications
-- `/forgot-password` sends a one-time reset link email.
-- `/reset-password?token=...` validates token and updates password.
-- New bids notify clients in-app and by email.
-- Awarded bids notify winning contractor in-app and by email (with client contact details).
+## Contributing
+
+1. Branch from `main` — use `feature/your-feature` naming.
+2. Write or update tests for any changed business logic.
+3. Run `npm test` and `npm run build` before opening a PR.
+4. Follow the security guidelines in `SECURITY.md`.
