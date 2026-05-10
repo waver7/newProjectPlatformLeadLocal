@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useFormState, useFormStatus } from 'react-dom';
 import { registerAction, type AuthActionState } from '@/app/actions/auth-actions';
 import { Button, Alert, FormField, Input } from '@/components/ui';
@@ -50,6 +51,28 @@ export function RegisterForm() {
           ))}
         </div>
       </FormField>
+
+      {/* Terms & Conditions agreement */}
+      <div className="flex items-start gap-2.5">
+        <input
+          id="agreedToTerms"
+          name="agreedToTerms"
+          type="checkbox"
+          required
+          className="mt-0.5 h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
+        />
+        <label htmlFor="agreedToTerms" className="text-sm text-slate-600">
+          I have read and agree to the{' '}
+          <Link href="/terms" target="_blank" className="font-medium text-brand-600 hover:underline">
+            Terms &amp; Conditions
+          </Link>{' '}
+          and{' '}
+          <Link href="/privacy" target="_blank" className="font-medium text-brand-600 hover:underline">
+            Privacy Policy
+          </Link>
+          . I am at least 18 years old.
+        </label>
+      </div>
 
       <SubmitButton />
     </form>
