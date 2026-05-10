@@ -1,12 +1,14 @@
 import Link from 'next/link';
 import { requireRole } from '@/lib/permissions';
+import { hasActiveSubscription } from '@/lib/billing';
 import { prisma } from '@/lib/prisma';
 import { Card, Alert, StatusBadge, UrgencyBadge, LinkButton } from '@/components/ui';
 import { PlaceBidForm } from './place-bid-form';
 
 export default async function ContractorRequestDetail({ params }: { params: { id: string } }) {
   const session = await requireRole(['CONTRACTOR']);
-  const req = await prisma.request.findUnique({
+  const [req, hasSub] = await Promise.all([
+    prisma.request.findUnique({
     where: { id: params.id },
     include: {
       category: true,
@@ -17,7 +19,9 @@ export default async function ContractorRequestDetail({ params }: { params: { id
       },
       _count: { select: { bids: true } }
     }
-  });
+    }),
+    hasActiveSubscription(session.user.id),
+  ]);
 
   if (!req) return <Card><p className="text-slate-500">Request unavailable.</p></Card>;
 
@@ -104,12 +108,26 @@ export default async function ContractorRequestDetail({ params }: { params: { id
         </Card>
       )}
 
-      {/* Place bid form */}
+      {/* Place bid form — requires active subscription */}
       {req.status === 'OPEN' && !myBid && (
-        <Card>
-          <h2 className="mb-4 font-semibold text-slate-900">Place Your Bid</h2>
-          <PlaceBidForm requestId={req.id} />
-        </Card>
+        hasSub ? (
+          <Card>
+            <h2 className="mb-4 font-semibold text-slate-900">Place Your Bid</h2>
+            <PlaceBidForm requestId={req.id} />
+          </Card>
+        ) : (
+          <Card className="text-center">
+            <p className="text-base font-semibold text-slate-900">Subscription required to bid</p>
+            <p className="mt-2 text-sm text-slate-500">
+              An active Contractor Pro subscription ($10/month) lets you bid on unlimited jobs across Ohio.
+            </p>
+            <div className="mt-4">
+              <LinkButton href="/dashboard/contractor/billing">
+                Get Contractor Pro →
+              </LinkButton>
+            </div>
+          </Card>
+        )
       )}
     </div>
   );
