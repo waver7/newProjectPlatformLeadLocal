@@ -49,6 +49,18 @@ export async function createRequestAction(_prevState: RequestActionState, formDa
   }
 
   const moderation = moderateText(`${parsed.data.title} ${parsed.data.description}`);
+
+  // FLAGGED = contact info detected → reject the form so the user can remove it
+  if (moderation.status === 'FLAGGED') {
+    return {
+      error: 'Your title or description appears to contain a phone number, email, or social handle. Please remove contact details — they will be shared with the winning contractor only after award.',
+      success: null
+    };
+  }
+
+  // REJECTED = prohibited keyword → send to admin review instead of auto-rejecting
+  const requestStatus = moderation.status === 'APPROVED' ? 'OPEN' : 'PENDING_MODERATION';
+
   const req = await prisma.request.create({
     data: {
       clientId: session.user.id,
@@ -60,7 +72,7 @@ export async function createRequestAction(_prevState: RequestActionState, formDa
       urgency: parsed.data.urgency,
       budget: parsed.data.budget,
       preferredDate: parsed.data.preferredDate ? new Date(parsed.data.preferredDate) : undefined,
-      status: moderation.status === 'REJECTED' ? 'REJECTED' : moderation.status === 'FLAGGED' ? 'PENDING_MODERATION' : 'OPEN',
+      status: requestStatus,
       moderationStatus: moderation.status,
       moderationLogs: {
         create: { targetType: 'REQUEST', status: moderation.status, reason: moderation.reason, actorUserId: session.user.id }
@@ -85,13 +97,23 @@ export async function updateRequestAction(_prevState: RequestActionState, formDa
   }
 
   const moderation = moderateText(`${parsed.data.title} ${parsed.data.description}`);
+
+  if (moderation.status === 'FLAGGED') {
+    return {
+      error: 'Your title or description appears to contain a phone number, email, or social handle. Please remove contact details.',
+      success: null
+    };
+  }
+
+  const updatedStatus = moderation.status === 'APPROVED' ? 'OPEN' : 'PENDING_MODERATION';
+
   await prisma.request.update({
     where: { id: req.id },
     data: {
       title: parsed.data.title,
       city: parsed.data.city,
       description: parsed.data.description,
-      status: moderation.status === 'FLAGGED' ? 'PENDING_MODERATION' : moderation.status === 'REJECTED' ? 'REJECTED' : 'OPEN',
+      status: updatedStatus,
       moderationStatus: moderation.status,
       moderationLogs: {
         create: { targetType: 'REQUEST', status: moderation.status, reason: moderation.reason, actorUserId: session.user.id }
