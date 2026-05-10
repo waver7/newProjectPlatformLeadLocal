@@ -1,6 +1,5 @@
-import type { Config } from 'jest';
-
-const config: Config = {
+/** @type {import('jest').Config} */
+const config = {
   preset: 'ts-jest',
   testEnvironment: 'node',
   moduleNameMapper: {
@@ -14,11 +13,10 @@ const config: Config = {
     '!lib/email.ts',
   ],
   coverageReporters: ['text', 'lcov'],
-  // Suppress Prisma/Next.js noise in tests
   modulePathIgnorePatterns: ['.next'],
   transform: {
     '^.+\\.tsx?$': ['ts-jest', { tsconfig: { module: 'commonjs' } }],
   },
 };
 
-export default config;
+module.exports = config;
