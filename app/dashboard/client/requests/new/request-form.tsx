@@ -6,6 +6,38 @@ import { Button, Alert, FormField, Input, Textarea, Select } from '@/components/
 
 const initial: RequestActionState = { error: null, success: null };
 
+// Major Ohio cities for the datalist
+const OHIO_CITIES = [
+  'Akron','Alliance','Ashland','Ashtabula','Athens','Barberton','Beavercreek',
+  'Bedford','Bowling Green','Brunswick','Canton','Centerville','Chillicothe',
+  'Cincinnati','Cleveland','Cleveland Heights','Columbus','Cuyahoga Falls',
+  'Dayton','Dublin','East Cleveland','Elyria','Euclid','Fairborn','Fairfield',
+  'Findlay','Gahanna','Garfield Heights','Grove City','Hamilton','Hilliard',
+  'Hudson','Huber Heights','Kent','Kettering','Lakewood','Lancaster','Lima',
+  'Lorain','Mansfield','Marion','Mason','Medina','Mentor','Middletown',
+  'Newark','North Olmsted','North Ridgeville','Norwood','Parma','Parma Heights',
+  'Pickerington','Portsmouth','Reynoldsburg','Rocky River','Sandusky',
+  'Shaker Heights','Solon','Springfield','Stow','Strongsville','Toledo',
+  'Troy','Upper Arlington','Warren','Westerville','Westlake','Wooster',
+  'Xenia','Youngstown','Zanesville',
+];
+
+const US_STATES = [
+  ['AL','Alabama'],['AK','Alaska'],['AZ','Arizona'],['AR','Arkansas'],
+  ['CA','California'],['CO','Colorado'],['CT','Connecticut'],['DE','Delaware'],
+  ['FL','Florida'],['GA','Georgia'],['HI','Hawaii'],['ID','Idaho'],
+  ['IL','Illinois'],['IN','Indiana'],['IA','Iowa'],['KS','Kansas'],
+  ['KY','Kentucky'],['LA','Louisiana'],['ME','Maine'],['MD','Maryland'],
+  ['MA','Massachusetts'],['MI','Michigan'],['MN','Minnesota'],['MS','Mississippi'],
+  ['MO','Missouri'],['MT','Montana'],['NE','Nebraska'],['NV','Nevada'],
+  ['NH','New Hampshire'],['NJ','New Jersey'],['NM','New Mexico'],['NY','New York'],
+  ['NC','North Carolina'],['ND','North Dakota'],['OH','Ohio'],['OK','Oklahoma'],
+  ['OR','Oregon'],['PA','Pennsylvania'],['RI','Rhode Island'],['SC','South Carolina'],
+  ['SD','South Dakota'],['TN','Tennessee'],['TX','Texas'],['UT','Utah'],
+  ['VT','Vermont'],['VA','Virginia'],['WA','Washington'],['WV','West Virginia'],
+  ['WI','Wisconsin'],['WY','Wyoming'],
+] as const;
+
 function SubmitButton() {
   const { pending } = useFormStatus();
   return (
@@ -49,12 +81,32 @@ export function RequestForm({ categories }: { categories: Array<{ id: string; na
           </Select>
         </FormField>
 
+        {/* City with datalist autocomplete */}
         <FormField label="City" required>
-          <Input name="city" placeholder="e.g. Austin" required minLength={2} />
+          <Input
+            name="city"
+            placeholder="e.g. Columbus"
+            required
+            minLength={2}
+            list="ohio-cities-list"
+            autoComplete="off"
+          />
+          <datalist id="ohio-cities-list">
+            {OHIO_CITIES.map((c) => <option key={c} value={c} />)}
+          </datalist>
         </FormField>
 
-        <FormField label="ZIP Code">
-          <Input name="zipCode" placeholder="e.g. 78701" />
+        <FormField label="State" required>
+          <Select name="state" defaultValue="OH" required>
+            <option value="">Select state…</option>
+            {US_STATES.map(([code, name]) => (
+              <option key={code} value={code}>{name}</option>
+            ))}
+          </Select>
+        </FormField>
+
+        <FormField label="ZIP Code" hint="Used to match nearby contractors">
+          <Input name="zipCode" placeholder="e.g. 43201" maxLength={5} pattern="\d{5}" />
         </FormField>
 
         <FormField label="Budget ($)">

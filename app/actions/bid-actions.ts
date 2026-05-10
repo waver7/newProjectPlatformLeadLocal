@@ -33,6 +33,15 @@ export async function placeBidAction(_prevState: BidActionState, formData: FormD
   if (!req || req.status !== 'OPEN') return { error: 'Request unavailable', success: null };
 
   const moderation = moderateText(parsed.data.message);
+
+  // Block contact info in messages — return error so contractor can fix it
+  if (moderation.status === 'FLAGGED') {
+    return {
+      error: 'Your message appears to contain a phone number, email, or social handle. Please remove contact details — they will be shared automatically if your bid is accepted.',
+      success: null
+    };
+  }
+
   const bid = await prisma.bid.create({
     data: {
       requestId: parsed.data.requestId,
@@ -40,7 +49,7 @@ export async function placeBidAction(_prevState: BidActionState, formData: FormD
       amount: parsed.data.amount,
       estimatedTimeline: parsed.data.estimatedTimeline,
       message: parsed.data.message,
-      status: moderation.status === 'FLAGGED' ? 'FLAGGED' : 'SUBMITTED',
+      status: moderation.status === 'REJECTED' ? 'FLAGGED' : 'SUBMITTED',
       moderationStatus: moderation.status,
       moderationLogs: {
         create: { targetType: 'BID', status: moderation.status, reason: moderation.reason, actorUserId: session.user.id }

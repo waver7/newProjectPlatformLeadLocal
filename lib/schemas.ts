@@ -12,6 +12,7 @@ export const requestSchema = z.object({
   categoryId: z.string().min(1, 'Please select a category'),
   description: z.string().min(20, 'Description must be at least 20 characters'),
   city: z.string().min(2, 'City must be at least 2 characters'),
+  state: z.string().min(2, 'Please select a state').optional(),
   zipCode: z.string().optional(),
   urgency: z.enum(['LOW', 'MEDIUM', 'HIGH', 'EMERGENCY']),
   budget: z.coerce.number().positive().optional(),

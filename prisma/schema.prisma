@@ -167,7 +167,10 @@ model Request {
   title            String
   description      String
   city             String
+  state            String?
   zipCode          String?
+  latitude         Float?
+  longitude        Float?
   urgency          Urgency          @default(MEDIUM)
   budget           Float?
   preferredDate    DateTime?

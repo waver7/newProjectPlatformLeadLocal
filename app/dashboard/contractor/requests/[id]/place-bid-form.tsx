@@ -34,7 +34,7 @@ export function PlaceBidForm({ requestId }: { requestId: string }) {
         </FormField>
       </div>
 
-      <FormField label="Message to Client" required hint="Describe your approach, experience, and why you're the best fit.">
+      <FormField label="Message to Client" required hint="Describe your approach, experience, and why you're the best fit. Do not include phone numbers or emails — they'll be shared automatically if your bid is accepted.">
         <Textarea name="message" rows={5} placeholder="Hi, I'd love to help with this project…" required minLength={10} />
       </FormField>
 
