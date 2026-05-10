@@ -1,14 +1,24 @@
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
+import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
 import { Card, UrgencyBadge, StatusBadge, LinkButton } from '@/components/ui';
 
 export default async function RequestDetail({ params }: { params: { id: string } }) {
-  const req = await prisma.request.findUnique({
-    where: { id: params.id },
-    include: { category: true, _count: { select: { bids: true } } }
-  });
+  const [req, session] = await Promise.all([
+    prisma.request.findUnique({
+      where: { id: params.id },
+      include: { category: true, _count: { select: { bids: true } } }
+    }),
+    auth()
+  ]);
+
   if (!req || req.status !== 'OPEN') notFound();
+
+  // Logged-in contractors go straight to their bidding page
+  if (session?.user?.role === 'CONTRACTOR') {
+    redirect(`/dashboard/contractor/requests/${req.id}`);
+  }
 
   return (
     <div className="mx-auto max-w-2xl space-y-4">

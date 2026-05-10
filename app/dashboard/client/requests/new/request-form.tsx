@@ -22,6 +22,10 @@ export function RequestForm({ categories }: { categories: Array<{ id: string; na
     <form action={formAction} className="space-y-5">
       {state.error && <Alert variant="error">{state.error}</Alert>}
 
+      <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        <strong>Important:</strong> Do not include phone numbers, email addresses, or social media handles in your title or description. Your contact details will be shared with the winning contractor automatically after you award a bid.
+      </div>
+
       <FormField label="Request Title" required hint="Be specific — e.g. 'Fix leaking kitchen sink under cabinet'">
         <Input name="title" placeholder="e.g. Repair bathroom tile grout" required minLength={5} />
       </FormField>
@@ -62,7 +66,7 @@ export function RequestForm({ categories }: { categories: Array<{ id: string; na
         </FormField>
       </div>
 
-      <FormField label="Description" required hint="Include details like size, materials, access info — more detail = better bids">
+      <FormField label="Description" required hint="Include details like size, materials, access info. No contact info — your details are shared automatically after award.">
         <Textarea name="description" rows={5} placeholder="Describe the job in detail…" required minLength={20} />
       </FormField>
 

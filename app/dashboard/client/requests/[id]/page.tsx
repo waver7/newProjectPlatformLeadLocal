@@ -65,13 +65,13 @@ export default async function ClientRequestDetail({ params }: { params: { id: st
 
       {req.status === 'PENDING_MODERATION' && (
         <Alert variant="warning">
-          Your request is being reviewed by our moderation team and will be visible to contractors shortly.
+          <strong>Under review</strong> — your request has been flagged for admin review and is not yet visible to contractors. It will go live once approved, usually within a short time.
         </Alert>
       )}
 
-      {req.status === 'REJECTED' && req.rejectionReason && (
+      {req.status === 'REJECTED' && (
         <Alert variant="error">
-          Request rejected: {req.rejectionReason}
+          <strong>Request rejected</strong>{req.rejectionReason ? `: ${req.rejectionReason}` : ' by the moderation team.'} Please contact support if you believe this is a mistake.
         </Alert>
       )}
 
