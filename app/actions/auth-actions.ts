@@ -22,7 +22,7 @@ export async function registerAction(_prevState: AuthActionState, formData: Form
 
   const existing = await prisma.user.findUnique({ where: { email: parsed.data.email } });
   if (existing) {
-    return { error: 'Email already used', success: null };
+    return { error: 'An account with this email already exists', success: null };
   }
 
   const hash = await bcrypt.hash(parsed.data.password, 10);
@@ -52,13 +52,15 @@ export async function registerAction(_prevState: AuthActionState, formData: Form
     }
   });
 
-  const loginResult = await signIn('credentials', {
-    email: user.email,
-    password: parsed.data.password,
-    redirect: false
-  });
-
-  if (loginResult?.error) {
+  // Auto sign-in after registration
+  try {
+    await signIn('credentials', {
+      email: user.email,
+      password: parsed.data.password,
+      redirect: false
+    });
+  } catch {
+    // Sign-in failed; account is created, send to login
     redirect('/login?error=account_created_login_failed');
   }
 
@@ -73,7 +75,7 @@ export async function loginAction(formData: FormData) {
     await signIn('credentials', {
       email,
       password,
-      redirectTo: '/'
+      redirectTo: '/dashboard'
     });
   } catch (error) {
     if (error instanceof AuthError) {
@@ -82,7 +84,6 @@ export async function loginAction(formData: FormData) {
       }
       redirect('/login?error=auth_failed');
     }
-
     throw error;
   }
 }

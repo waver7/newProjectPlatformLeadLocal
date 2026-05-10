@@ -2,40 +2,55 @@
 
 import { useFormState, useFormStatus } from 'react-dom';
 import { registerAction, type AuthActionState } from '@/app/actions/auth-actions';
-import { Button } from '@/components/ui';
+import { Button, Alert, FormField, Input } from '@/components/ui';
 
-const initialState: AuthActionState = { error: null };
+const initial: AuthActionState = { error: null };
 
 function SubmitButton() {
   const { pending } = useFormStatus();
-
   return (
-    <Button type="submit" disabled={pending}>
-      {pending ? 'Creating...' : 'Create account'}
+    <Button type="submit" disabled={pending} className="w-full justify-center">
+      {pending ? 'Creating account…' : 'Create account'}
     </Button>
   );
 }
 
 export function RegisterForm() {
-  const [state, formAction] = useFormState(registerAction, initialState);
+  const [state, formAction] = useFormState(registerAction, initial);
 
   return (
-    <form action={formAction} className="space-y-3">
-      {state.error ? <p className="rounded-md bg-red-50 p-2 text-sm text-red-700">{state.error}</p> : null}
-      <input name="fullName" className="w-full rounded border p-2" placeholder="Full name" required minLength={2} />
-      <input name="email" type="email" className="w-full rounded border p-2" placeholder="Email" required />
-      <input
-        name="password"
-        type="password"
-        className="w-full rounded border p-2"
-        placeholder="Password (8+ chars)"
-        required
-        minLength={8}
-      />
-      <select name="role" className="w-full rounded border p-2" defaultValue="CLIENT" required>
-        <option value="CLIENT">Client</option>
-        <option value="CONTRACTOR">Contractor</option>
-      </select>
+    <form action={formAction} className="space-y-4">
+      {state.error && <Alert variant="error">{state.error}</Alert>}
+
+      <FormField label="Full name" required>
+        <Input name="fullName" placeholder="Jane Smith" required minLength={2} autoComplete="name" />
+      </FormField>
+
+      <FormField label="Email address" required>
+        <Input name="email" type="email" placeholder="jane@example.com" required autoComplete="email" />
+      </FormField>
+
+      <FormField label="Password" required hint="At least 8 characters">
+        <Input name="password" type="password" placeholder="••••••••" required minLength={8} autoComplete="new-password" />
+      </FormField>
+
+      <FormField label="I am a…" required>
+        <div className="grid grid-cols-2 gap-2">
+          {[
+            { value: 'CLIENT', label: 'Client', desc: 'Post tasks & hire' },
+            { value: 'CONTRACTOR', label: 'Contractor', desc: 'Find jobs & bid' }
+          ].map((opt) => (
+            <label key={opt.value} className="relative flex cursor-pointer rounded-lg border border-slate-200 p-3 hover:border-brand-400 has-[:checked]:border-brand-500 has-[:checked]:bg-brand-50">
+              <input type="radio" name="role" value={opt.value} defaultChecked={opt.value === 'CLIENT'} className="sr-only" required />
+              <div>
+                <p className="font-medium text-slate-900">{opt.label}</p>
+                <p className="text-xs text-slate-500">{opt.desc}</p>
+              </div>
+            </label>
+          ))}
+        </div>
+      </FormField>
+
       <SubmitButton />
     </form>
   );
