@@ -103,8 +103,9 @@ model User {
   notifications       Notification[]
   subscriptions       Subscription[]
   creditWallet        CreditWallet?
-  moderationLogs      ModerationLog[] @relation("ActorModerationLogs")
-  passwordResetTokens PasswordResetToken[]
+  moderationLogs         ModerationLog[] @relation("ActorModerationLogs")
+  passwordResetTokens    PasswordResetToken[]
+  emailVerificationCodes EmailVerificationCode[]
 }
 
 model Profile {
@@ -333,6 +334,17 @@ model PasswordResetToken {
   tokenHash String   @unique
   expiresAt DateTime
   usedAt    DateTime?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model EmailVerificationCode {
+  id        String   @id @default(cuid())
+  userId    String
+  codeHash  String
+  expiresAt DateTime
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 

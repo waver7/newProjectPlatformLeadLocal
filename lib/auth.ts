@@ -78,19 +78,24 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           email: user.email,
           name: user.profile?.fullName ?? user.email,
           role: user.role,
+          emailVerified: !!user.emailVerified,
         };
       },
     }),
   ],
   callbacks: {
     jwt({ token, user }) {
-      if (user) token.role = (user as { role?: string }).role;
+      if (user) {
+        token.role = (user as { role?: string }).role;
+        token.emailVerified = (user as { emailVerified?: boolean }).emailVerified ?? false;
+      }
       return token;
     },
     session({ session, token }) {
       if (session.user) {
         session.user.id = token.sub as string;
         session.user.role = token.role as string;
+        session.user.emailVerified = token.emailVerified as boolean;
       }
       return session;
     },

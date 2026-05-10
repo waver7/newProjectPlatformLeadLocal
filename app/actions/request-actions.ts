@@ -4,6 +4,7 @@ import { auth } from '@/auth';
 import { getSettings } from '@/lib/data';
 import { sendContractorAwardEmail } from '@/lib/email';
 import { lookupZip } from '@/lib/geo';
+import { checkClientCanPost } from '@/lib/billing';
 import { moderateText } from '@/lib/moderation';
 import { prisma } from '@/lib/prisma';
 import { requestSchema } from '@/lib/schemas';
@@ -30,23 +31,39 @@ export async function createRequestAction(_prevState: RequestActionState, formDa
   const parsed = requestSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Invalid input', success: null };
 
-  const settings = await getSettings();
+  const [settings, billingAccess] = await Promise.all([
+    getSettings(),
+    checkClientCanPost(session.user.id),
+  ]);
 
-  // Atomic: increment only if under the limit, update contact info at the same time
-  const updated = await prisma.clientProfile.updateMany({
-    where: {
-      userId: session.user.id,
-      freePostsUsed: { lt: settings.freePostLimit }
-    },
-    data: {
-      freePostsUsed: { increment: 1 },
-      phonePrivate: parsed.data.phonePrivate,
-      emailPrivate: parsed.data.emailPrivate
+  if (billingAccess.allowed) {
+    // Subscribed / trial user — just update contact info (no free-post counter)
+    await prisma.clientProfile.update({
+      where: { userId: session.user.id },
+      data: { phonePrivate: parsed.data.phonePrivate, emailPrivate: parsed.data.emailPrivate },
+    });
+  } else if (billingAccess.reason === 'no_subscription') {
+    // No subscription → fall back to the admin-configurable free-post limit
+    const updated = await prisma.clientProfile.updateMany({
+      where: { userId: session.user.id, freePostsUsed: { lt: settings.freePostLimit } },
+      data: {
+        freePostsUsed: { increment: 1 },
+        phonePrivate: parsed.data.phonePrivate,
+        emailPrivate: parsed.data.emailPrivate,
+      },
+    });
+    if (updated.count === 0) {
+      return {
+        error: `You've used all ${settings.freePostLimit} free post${settings.freePostLimit !== 1 ? 's' : ''}. Subscribe to keep posting.`,
+        success: null,
+      };
     }
-  });
-
-  if (updated.count === 0) {
-    return { error: `Free post limit reached (${settings.freePostLimit}). Upgrade your plan to post more.`, success: null };
+  } else {
+    // quota_exceeded — subscription active but monthly limit reached
+    return {
+      error: 'You have reached your plan's monthly request limit. Upgrade to post more.',
+      success: null,
+    };
   }
 
   const moderation = moderateText(`${parsed.data.title} ${parsed.data.description}`);

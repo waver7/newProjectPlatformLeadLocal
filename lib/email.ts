@@ -62,6 +62,24 @@ export async function sendClientNewBidEmail(params: {
   });
 }
 
+export async function sendEmailVerificationCode(email: string, code: string) {
+  await sendMail({
+    to: email,
+    subject: 'Your LeadLocal verification code',
+    text: `Your verification code is: ${code}\n\nThis code expires in 15 minutes.\n\nIf you did not register at LeadLocal, you can safely ignore this email.`,
+    html: `
+      <div style="font-family:sans-serif;max-width:480px;margin:0 auto">
+        <h2 style="color:#1e293b">Verify your email</h2>
+        <p style="color:#475569">Enter the code below on the verification page to activate your LeadLocal account.</p>
+        <div style="margin:24px 0;text-align:center">
+          <span style="display:inline-block;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:12px;padding:16px 32px;font-size:32px;font-weight:700;letter-spacing:8px;color:#1e293b">${code}</span>
+        </div>
+        <p style="color:#94a3b8;font-size:13px">This code expires in 15 minutes. If you did not create an account, ignore this email.</p>
+      </div>
+    `
+  });
+}
+
 export async function sendContractorAwardEmail(params: {
   to: string;
   requestTitle: string;

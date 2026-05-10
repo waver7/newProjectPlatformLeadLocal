@@ -58,15 +58,31 @@ export default async function RequestDetail({ params }: { params: { id: string }
         </div>
       </Card>
 
-      <Card className="text-center">
-        <p className="text-sm font-medium text-slate-700">Interested in this job?</p>
-        <p className="mt-1 text-sm text-slate-500">Log in or create a contractor account to place your bid.</p>
-        <div className="mt-4 flex justify-center gap-3">
-          <LinkButton href="/login" variant="secondary">Log in</LinkButton>
-          <LinkButton href="/register">Join & bid</LinkButton>
-        </div>
-        <p className="mt-3 text-xs text-slate-400">Client contact is only revealed to the winning contractor.</p>
-      </Card>
+      {/* Role-appropriate call-to-action */}
+      {!session?.user && (
+        <Card className="text-center">
+          <p className="text-sm font-medium text-slate-700">Interested in this job?</p>
+          <p className="mt-1 text-sm text-slate-500">Log in or create a contractor account to place your bid.</p>
+          <div className="mt-4 flex justify-center gap-3">
+            <LinkButton href="/login" variant="secondary">Log in</LinkButton>
+            <LinkButton href="/register">Join &amp; bid</LinkButton>
+          </div>
+          <p className="mt-3 text-xs text-slate-400">Client contact is only revealed to the winning contractor.</p>
+        </Card>
+      )}
+
+      {session?.user?.role === 'CLIENT' && (
+        <Card className="text-center">
+          <p className="text-sm font-medium text-slate-700">You&apos;re logged in as a client.</p>
+          <p className="mt-1 text-sm text-slate-500">
+            To bid on jobs you need a separate contractor account.
+          </p>
+          <div className="mt-4 flex justify-center gap-3">
+            <LinkButton href="/dashboard/client" variant="secondary">My Dashboard</LinkButton>
+            <LinkButton href="/register">Create contractor account</LinkButton>
+          </div>
+        </Card>
+      )}
     </div>
   );
 }

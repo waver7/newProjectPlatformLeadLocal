@@ -9,6 +9,8 @@ import { AuthError } from 'next-auth';
 import { consumePasswordResetToken, issuePasswordResetToken } from '@/lib/password-reset';
 import { sendPasswordResetEmail } from '@/lib/email';
 import { createTrialSubscription } from '@/lib/billing';
+import { generateVerificationCode } from '@/lib/email-verification';
+import { sendEmailVerificationCode } from '@/lib/email';
 
 export type AuthActionState = {
   error: string | null;
@@ -63,6 +65,14 @@ export async function registerAction(_prevState: AuthActionState, formData: Form
   // Auto-create 1-day free trial for new clients
   if (user.role === 'CLIENT') {
     await createTrialSubscription(user.id);
+  }
+
+  // Send email verification OTP (non-blocking — don't fail registration if email fails)
+  try {
+    const code = await generateVerificationCode(user.id);
+    await sendEmailVerificationCode(user.email, code);
+  } catch (err) {
+    console.error('[register] Failed to send verification email:', err);
   }
 
   // Auto sign-in after registration
