@@ -1,31 +1,68 @@
+import Link from 'next/link';
 import { loginAction } from '@/app/actions/auth-actions';
-import { Button, Card } from '@/components/ui';
+import { Card, Button } from '@/components/ui';
 
-type LoginPageProps = {
-  searchParams?: {
-    error?: string;
-  };
+type Props = { searchParams?: { error?: string } };
+
+const errors: Record<string, string> = {
+  invalid_credentials: 'Incorrect email or password. Please try again.',
+  account_created_login_failed: 'Account created — please log in.',
+  auth_failed: 'Something went wrong. Please try again.'
 };
 
-const errorMessageByCode: Record<string, string> = {
-  invalid_credentials: 'Invalid login or password.',
-  account_created_login_failed: 'Account created. Please sign in manually.',
-  auth_failed: 'Authentication failed. Please try again.'
-};
-
-export default function LoginPage({ searchParams }: LoginPageProps) {
-  const errorCode = searchParams?.error;
-  const errorMessage = errorCode ? errorMessageByCode[errorCode] ?? errorMessageByCode.auth_failed : null;
+export default function LoginPage({ searchParams }: Props) {
+  const errorMsg = searchParams?.error ? (errors[searchParams.error] ?? errors.auth_failed) : null;
 
   return (
-    <Card className="mx-auto max-w-md">
-      <h1 className="mb-4 text-xl font-semibold">Login</h1>
-      {errorMessage ? <p className="mb-3 rounded-md bg-red-50 p-2 text-sm text-red-700">{errorMessage}</p> : null}
-      <form action={loginAction} className="space-y-3">
-        <input name="email" type="text" className="w-full rounded border p-2" placeholder="Email or username" required />
-        <input name="password" type="password" className="w-full rounded border p-2" placeholder="Password" required />
-        <Button type="submit">Sign in</Button>
-      </form>
-    </Card>
+    <div className="flex min-h-[60vh] items-center justify-center">
+      <div className="w-full max-w-md space-y-4">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-slate-900">Welcome back</h1>
+          <p className="mt-1 text-sm text-slate-500">Sign in to your LocalTaskHub account</p>
+        </div>
+
+        <Card>
+          {errorMsg && (
+            <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+              {errorMsg}
+            </div>
+          )}
+
+          <form action={loginAction} className="space-y-4">
+            <div className="space-y-1">
+              <label className="block text-sm font-medium text-slate-700">Email or username</label>
+              <input
+                name="email"
+                type="text"
+                className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm placeholder-slate-400 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+                placeholder="you@email.com"
+                required
+                autoComplete="email"
+              />
+            </div>
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <label className="block text-sm font-medium text-slate-700">Password</label>
+                <Link href="/forgot-password" className="text-xs text-brand-600 hover:underline">Forgot password?</Link>
+              </div>
+              <input
+                name="password"
+                type="password"
+                className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm placeholder-slate-400 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+                placeholder="••••••••"
+                required
+                autoComplete="current-password"
+              />
+            </div>
+            <Button type="submit" className="w-full justify-center">Sign in</Button>
+          </form>
+        </Card>
+
+        <p className="text-center text-sm text-slate-600">
+          Don&apos;t have an account?{' '}
+          <Link href="/register" className="font-medium text-brand-600 hover:underline">Join free</Link>
+        </p>
+      </div>
+    </div>
   );
 }

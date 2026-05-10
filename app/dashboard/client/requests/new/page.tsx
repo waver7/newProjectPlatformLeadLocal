@@ -1,16 +1,22 @@
 import { requireRole } from '@/lib/permissions';
 import { prisma } from '@/lib/prisma';
-import { Card } from '@/components/ui';
+import { Card, SectionHeader } from '@/components/ui';
 import { RequestForm } from './request-form';
 
 export default async function NewRequestPage() {
   await requireRole(['CLIENT']);
-  const categories = await prisma.category.findMany({ where: { isActive: true }, select: { id: true, name: true } });
+  const categories = await prisma.category.findMany({
+    where: { isActive: true },
+    select: { id: true, name: true },
+    orderBy: { name: 'asc' }
+  });
 
   return (
-    <Card>
-      <h1 className="mb-3 text-xl font-semibold">New request</h1>
-      <RequestForm categories={categories} />
-    </Card>
+    <div className="mx-auto max-w-2xl space-y-4">
+      <SectionHeader title="Post a Request" subtitle="Describe what you need and contractors will bid on it" />
+      <Card>
+        <RequestForm categories={categories} />
+      </Card>
+    </div>
   );
 }

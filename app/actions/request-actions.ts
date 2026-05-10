@@ -17,22 +17,35 @@ export type RequestActionState = {
 
 const editRequestSchema = z.object({
   id: z.string().min(1),
-  title: z.string().min(5),
-  city: z.string().min(2),
-  description: z.string().min(20)
+  title: z.string().min(5, 'Title must be at least 5 characters'),
+  city: z.string().min(2, 'City required'),
+  description: z.string().min(20, 'Description must be at least 20 characters')
 });
 
 export async function createRequestAction(_prevState: RequestActionState, formData: FormData): Promise<RequestActionState> {
   const session = await auth();
   if (!session?.user || session.user.role !== 'CLIENT') return { error: 'Unauthorized', success: null };
+
   const parsed = requestSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Invalid input', success: null };
 
   const settings = await getSettings();
-  const cp = await prisma.clientProfile.findUnique({ where: { userId: session.user.id } });
-  if (!cp) return { error: 'Client profile missing', success: null };
-  if (cp.freePostsUsed >= settings.freePostLimit) {
-    return { error: `Free post limit reached (${settings.freePostLimit}).`, success: null };
+
+  // Atomic: increment only if under the limit, update contact info at the same time
+  const updated = await prisma.clientProfile.updateMany({
+    where: {
+      userId: session.user.id,
+      freePostsUsed: { lt: settings.freePostLimit }
+    },
+    data: {
+      freePostsUsed: { increment: 1 },
+      phonePrivate: parsed.data.phonePrivate,
+      emailPrivate: parsed.data.emailPrivate
+    }
+  });
+
+  if (updated.count === 0) {
+    return { error: `Free post limit reached (${settings.freePostLimit}). Upgrade your plan to post more.`, success: null };
   }
 
   const moderation = moderateText(`${parsed.data.title} ${parsed.data.description}`);
@@ -55,14 +68,6 @@ export async function createRequestAction(_prevState: RequestActionState, formDa
     }
   });
 
-  await prisma.clientProfile.update({
-    where: { userId: session.user.id },
-    data: {
-      phonePrivate: parsed.data.phonePrivate,
-      emailPrivate: parsed.data.emailPrivate,
-      freePostsUsed: { increment: 1 }
-    }
-  });
   redirect(`/dashboard/client/requests/${req.id}`);
 }
 
@@ -76,7 +81,7 @@ export async function updateRequestAction(_prevState: RequestActionState, formDa
   const req = await prisma.request.findUnique({ where: { id: parsed.data.id } });
   if (!req || req.clientId !== session.user.id) return { error: 'Request not found', success: null };
   if (!['OPEN', 'PENDING_MODERATION', 'DRAFT'].includes(req.status)) {
-    return { error: 'Only open/pending requests can be edited.', success: null };
+    return { error: 'Only open or pending requests can be edited.', success: null };
   }
 
   const moderation = moderateText(`${parsed.data.title} ${parsed.data.description}`);
@@ -102,6 +107,7 @@ export async function updateRequestAction(_prevState: RequestActionState, formDa
 export async function awardBidAction(requestId: string, bidId: string) {
   const session = await auth();
   if (!session?.user || session.user.role !== 'CLIENT') return { error: 'Unauthorized' };
+
   const request = await prisma.request.findUnique({
     where: { id: requestId },
     include: {
@@ -109,7 +115,10 @@ export async function awardBidAction(requestId: string, bidId: string) {
       client: { include: { clientProfile: true } }
     }
   });
-  if (!request || request.clientId !== session.user.id || request.status !== 'OPEN') return { error: 'Request not eligible' };
+  if (!request || request.clientId !== session.user.id || request.status !== 'OPEN') {
+    return { error: 'Request not eligible for awarding' };
+  }
+
   const selected = request.bids.find((b) => b.id === bidId);
   if (!selected) return { error: 'Bid not found' };
 
@@ -117,12 +126,14 @@ export async function awardBidAction(requestId: string, bidId: string) {
     prisma.bid.updateMany({ where: { requestId, id: { not: bidId } }, data: { status: 'REJECTED' } }),
     prisma.bid.update({ where: { id: bidId }, data: { status: 'ACCEPTED', isWinner: true } }),
     prisma.request.update({ where: { id: requestId }, data: { status: 'AWARDED', awardedBidId: bidId } }),
+    prisma.conversation.updateMany({ where: { requestId }, data: { isAwarded: false } }),
+    prisma.conversation.updateMany({ where: { bidId }, data: { isAwarded: true } }),
     prisma.notification.create({
       data: {
         userId: selected.contractorId,
         type: 'BID_ACCEPTED',
-        title: 'Your bid was accepted',
-        body: `You won the bid for ${request.title}`,
+        title: 'Your bid was accepted!',
+        body: `You won the bid for "${request.title}"`,
         href: `/dashboard/contractor/requests/${requestId}`
       }
     })
