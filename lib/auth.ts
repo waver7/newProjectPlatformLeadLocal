@@ -50,35 +50,40 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const passwordOk = await bcrypt.compare(parsed.data.password, user.passwordHash);
 
         if (!passwordOk) {
-          // Increment failure counter; lock after MAX_FAILURES
           const newCount = user.failedLoginAttempts + 1;
           const shouldLock = newCount >= MAX_FAILURES;
 
-          await prisma.user.update({
-            where: { id: user.id },
-            data: {
-              failedLoginAttempts: newCount,
-              lockedUntil: shouldLock
-                ? new Date(Date.now() + LOCKOUT_MINUTES * 60_000)
-                : undefined,
-            },
-          });
+          try {
+            await prisma.user.update({
+              where: { id: user.id },
+              data: {
+                failedLoginAttempts: newCount,
+                lockedUntil: shouldLock
+                  ? new Date(Date.now() + LOCKOUT_MINUTES * 60_000)
+                  : undefined,
+              },
+            });
+          } catch (e) {
+            console.error('[auth] Failed to update login failure counter:', e);
+          }
 
           return null;
         }
 
-        // Successful login — reset failure counter and clear any lockout
-        await prisma.user.update({
-          where: { id: user.id },
-          data: { failedLoginAttempts: 0, lockedUntil: null },
-        });
+        try {
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { failedLoginAttempts: 0, lockedUntil: null },
+          });
+        } catch (e) {
+          console.error('[auth] Failed to reset login failure counter:', e);
+        }
 
         return {
           id: user.id,
           email: user.email,
           name: user.profile?.fullName ?? user.email,
           role: user.role,
-          emailVerified: !!user.emailVerified,
         };
       },
     }),
@@ -87,7 +92,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     jwt({ token, user }) {
       if (user) {
         token.role = (user as { role?: string }).role;
-        token.emailVerified = (user as { emailVerified?: boolean }).emailVerified ?? false;
       }
       return token;
     },
@@ -95,7 +99,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (session.user) {
         session.user.id = token.sub as string;
         session.user.role = token.role as string;
-        session.user.emailVerified = token.emailVerified as boolean;
       }
       return session;
     },
