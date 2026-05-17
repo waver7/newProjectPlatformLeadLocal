@@ -198,12 +198,15 @@ npm run dev
 
 ## Demo Accounts
 
-| Role | Email / Username | Password |
-|------|-----------------|----------|
-| Admin | `admin@leadlocal.dev` | `Password123!` |
-| Admin (quick) | `admin` | `123` |
-| Client | `client.demo` | `123456` |
-| Contractor (active sub) | `contractor.demo` | `123456` |
+Sign in with **username + password** (email is used only for verification and password reset).
+
+| Role | Username | Password |
+|------|----------|----------|
+| Admin | `admin` | `Password123!` |
+| Client | `client1` | `Password123!` |
+| Client (quick) | `clientdemo` | `123456` |
+| Contractor (active sub) | `contractor1` | `Password123!` |
+| Contractor (quick) | `contractordemo` | `123456` |
 
 ---
 

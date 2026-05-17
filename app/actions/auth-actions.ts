@@ -29,14 +29,20 @@ export async function registerAction(_prevState: AuthActionState, formData: Form
     return { error: 'You must agree to the Terms & Conditions to create an account.', success: null };
   }
 
-  const existing = await prisma.user.findUnique({ where: { email: parsed.data.email } });
-  if (existing) {
+  const existingEmail = await prisma.user.findUnique({ where: { email: parsed.data.email } });
+  if (existingEmail) {
     return { error: 'An account with this email already exists', success: null };
+  }
+
+  const existingUsername = await prisma.user.findUnique({ where: { username: parsed.data.username } });
+  if (existingUsername) {
+    return { error: 'That username is already taken. Please choose another.', success: null };
   }
 
   const hash = await bcrypt.hash(parsed.data.password, 10);
   const user = await prisma.user.create({
     data: {
+      username: parsed.data.username,
       email: parsed.data.email,
       passwordHash: hash,
       role: parsed.data.role,
@@ -78,7 +84,7 @@ export async function registerAction(_prevState: AuthActionState, formData: Form
   // Auto sign-in after registration
   try {
     await signIn('credentials', {
-      email: user.email,
+      username: user.username,
       password: parsed.data.password,
       redirect: false
     });
@@ -91,12 +97,12 @@ export async function registerAction(_prevState: AuthActionState, formData: Form
 }
 
 export async function loginAction(formData: FormData) {
-  const email = String(formData.get('email') ?? '');
+  const username = String(formData.get('username') ?? '').trim().toLowerCase();
   const password = String(formData.get('password') ?? '');
 
   try {
     await signIn('credentials', {
-      email,
+      username,
       password,
       redirectTo: '/dashboard'
     });

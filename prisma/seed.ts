@@ -5,12 +5,13 @@ const prisma = new PrismaClient();
 
 const categoryNames = ['Plumbing', 'Electrical', 'HVAC', 'Handyman', 'Painting', 'Cleaning', 'Landscaping', 'Moving', 'Junk Removal', 'Flooring', 'Roofing', 'Beauty', 'Fitness', 'Personal Training', 'Auto Services', 'Appliance Repair', 'General Labor'];
 
-type DemoUser = { email: string; role: Role; name: string; password?: string };
+type DemoUser = { username: string; email: string; role: Role; name: string; password?: string };
 
-async function createUser(email: string, role: Role, name: string, password = 'Password123!') {
+async function createUser(username: string, email: string, role: Role, name: string, password = 'Password123!') {
   const passwordHash = await bcrypt.hash(password, 10);
   return prisma.user.create({
     data: {
+      username,
       email,
       passwordHash,
       role,
@@ -44,18 +45,17 @@ async function main() {
   }
 
   const demoUsers: DemoUser[] = [
-    { email: 'admin@leadlocal.dev', role: 'ADMIN', name: 'Platform Admin', password: 'Password123!' },
-    { email: 'admin', role: 'ADMIN', name: 'Admin Simple Login', password: '123' },
-    { email: 'client1@leadlocal.dev', role: 'CLIENT', name: 'Client One', password: 'Password123!' },
-    { email: 'client2@leadlocal.dev', role: 'CLIENT', name: 'Client Two', password: 'Password123!' },
-    { email: 'client.demo', role: 'CLIENT', name: 'Client Demo', password: '123456' },
-    { email: 'contractor1@leadlocal.dev', role: 'CONTRACTOR', name: 'Contractor One', password: 'Password123!' },
-    { email: 'contractor2@leadlocal.dev', role: 'CONTRACTOR', name: 'Contractor Two', password: 'Password123!' },
-    { email: 'contractor.demo', role: 'CONTRACTOR', name: 'Contractor Demo', password: '123456' }
+    { username: 'admin', email: 'admin@leadlocal.dev', role: 'ADMIN', name: 'Platform Admin', password: 'Password123!' },
+    { username: 'client1', email: 'client1@leadlocal.dev', role: 'CLIENT', name: 'Client One', password: 'Password123!' },
+    { username: 'client2', email: 'client2@leadlocal.dev', role: 'CLIENT', name: 'Client Two', password: 'Password123!' },
+    { username: 'clientdemo', email: 'client.demo@leadlocal.dev', role: 'CLIENT', name: 'Client Demo', password: '123456' },
+    { username: 'contractor1', email: 'contractor1@leadlocal.dev', role: 'CONTRACTOR', name: 'Contractor One', password: 'Password123!' },
+    { username: 'contractor2', email: 'contractor2@leadlocal.dev', role: 'CONTRACTOR', name: 'Contractor Two', password: 'Password123!' },
+    { username: 'contractordemo', email: 'contractor.demo@leadlocal.dev', role: 'CONTRACTOR', name: 'Contractor Demo', password: '123456' }
   ];
 
-  const createdUsers = await Promise.all(demoUsers.map((u) => createUser(u.email, u.role, u.name, u.password)));
-  const admin = createdUsers.find((u) => u.role === 'ADMIN' && u.email === 'admin@leadlocal.dev')!;
+  const createdUsers = await Promise.all(demoUsers.map((u) => createUser(u.username, u.email, u.role, u.name, u.password)));
+  const admin = createdUsers.find((u) => u.role === 'ADMIN')!;
   const clients = createdUsers.filter((u) => u.role === 'CLIENT');
   const contractors = createdUsers.filter((u) => u.role === 'CONTRACTOR');
 

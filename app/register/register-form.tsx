@@ -27,7 +27,19 @@ export function RegisterForm() {
         <Input name="fullName" placeholder="Jane Smith" required minLength={2} autoComplete="name" />
       </FormField>
 
-      <FormField label="Email address" required>
+      <FormField label="Username" required hint="3-20 characters: letters, numbers, underscores. Used to sign in.">
+        <Input
+          name="username"
+          placeholder="janesmith"
+          required
+          minLength={3}
+          maxLength={20}
+          pattern="[A-Za-z0-9_]+"
+          autoComplete="username"
+        />
+      </FormField>
+
+      <FormField label="Email address" required hint="Used for verification and password reset only.">
         <Input name="email" type="email" placeholder="jane@example.com" required autoComplete="email" />
       </FormField>
 

@@ -2,12 +2,12 @@
  * Creates (or updates) an ADMIN user.
  *
  * Usage:
- *   node scripts/create-admin.js <email> <password> [fullName]
+ *   node scripts/create-admin.js <username> <password> <email> [fullName]
  *
  * Example:
- *   node scripts/create-admin.js admin@leadlocal.dev Admin123! "Site Admin"
+ *   node scripts/create-admin.js admin Admin123! waverstudio@gmail.com "Site Admin"
  *
- * If the email already exists, its password is reset and role set to ADMIN.
+ * If the username already exists, its password is reset and role set to ADMIN.
  */
 const bcrypt = require('bcryptjs');
 const { PrismaClient } = require('@prisma/client');
@@ -15,21 +15,23 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 async function main() {
-  const email = (process.argv[2] || '').trim().toLowerCase();
+  const username = (process.argv[2] || '').trim().toLowerCase();
   const password = process.argv[3] || '';
-  const fullName = process.argv[4] || 'Site Admin';
+  const email = (process.argv[4] || '').trim().toLowerCase();
+  const fullName = process.argv[5] || 'Site Admin';
 
-  if (!email || !password) {
-    console.error('Usage: node scripts/create-admin.js <email> <password> [fullName]');
+  if (!username || !password || !email) {
+    console.error('Usage: node scripts/create-admin.js <username> <password> <email> [fullName]');
     process.exit(1);
   }
 
   const passwordHash = await bcrypt.hash(password, 10);
 
   const user = await prisma.user.upsert({
-    where: { email },
+    where: { username },
     update: {
       passwordHash,
+      email,
       role: 'ADMIN',
       isActive: true,
       emailVerified: new Date(),
@@ -37,6 +39,7 @@ async function main() {
       lockedUntil: null,
     },
     create: {
+      username,
       email,
       passwordHash,
       role: 'ADMIN',
@@ -47,7 +50,7 @@ async function main() {
     },
   });
 
-  console.log(`Admin ready: ${user.email} (id: ${user.id})`);
+  console.log(`Admin ready: ${user.username} <${user.email}> (id: ${user.id})`);
 }
 
 main()

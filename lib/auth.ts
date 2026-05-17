@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { prisma } from './prisma';
 
-const credsSchema = z.object({ email: z.string().min(1), password: z.string().min(1) });
+const credsSchema = z.object({ username: z.string().min(1), password: z.string().min(1) });
 
 // Lock an account after this many consecutive failures …
 const MAX_FAILURES = 5;
@@ -16,15 +16,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   pages: { signIn: '/login' },
   providers: [
     Credentials({
-      credentials: { email: {}, password: {} },
+      credentials: { username: {}, password: {} },
       authorize: async (credentials) => {
         const parsed = credsSchema.safeParse(credentials);
         if (!parsed.success) return null;
 
-        const loginId = parsed.data.email.trim().toLowerCase();
+        const loginId = parsed.data.username.trim().toLowerCase();
 
         const user = await prisma.user.findUnique({
-          where: { email: loginId },
+          where: { username: loginId },
           include: { profile: true },
         });
 

@@ -45,14 +45,14 @@ export default function LoginPage({ searchParams }: Props) {
 
           <form action={loginAction} className="space-y-4">
             <div className="space-y-1">
-              <label className="block text-sm font-medium text-slate-700">Email or username</label>
+              <label className="block text-sm font-medium text-slate-700">Username</label>
               <input
-                name="email"
+                name="username"
                 type="text"
                 className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm placeholder-slate-400 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
-                placeholder="you@email.com"
+                placeholder="yourusername"
                 required
-                autoComplete="email"
+                autoComplete="username"
               />
             </div>
             <div className="space-y-1">
