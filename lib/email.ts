@@ -1,65 +1,30 @@
+import { Resend } from 'resend';
+
+const resend = new Resend(process.env.RESEND_API_KEY);
+const FROM = process.env.MAIL_FROM || 'LeadLocal <onboarding@resend.dev>';
+
 type MailInput = { to: string; subject: string; text: string; html?: string };
 
-type MailTransporter = {
-  sendMail: (input: Record<string, unknown>) => Promise<unknown>;
-};
-
-async function getTransporter(): Promise<MailTransporter | null> {
-  const host = process.env.SMTP_HOST;
-  const port = Number(process.env.SMTP_PORT || '587');
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
-
-  if (!host || !user || !pass) return null;
-
-  try {
-    const nodemailerModule = await import(/* webpackIgnore: true */ 'nodemailer');
-    const nodemailer = (nodemailerModule as { default?: { createTransport: Function } }).default ?? (nodemailerModule as { createTransport: Function });
-
-    return nodemailer.createTransport({
-      host,
-      port,
-      secure: port === 465,
-      auth: { user, pass }
-    }) as MailTransporter;
-  } catch {
-    console.warn('[mail] nodemailer is not installed; falling back to mock logger.');
-    return null;
-  }
-}
-
-export async function sendMail(input: MailInput) {
-  const from = process.env.MAIL_FROM || 'LeadLocal <no-reply@leadlocal.dev>';
-  const transporter = await getTransporter();
-
-  if (!transporter) {
-    console.log('[mail:mock]', { from, ...input });
+async function sendMail(input: MailInput) {
+  if (!process.env.RESEND_API_KEY) {
+    console.log('[mail:mock] RESEND_API_KEY not set — would have sent to:', input.to);
+    console.log('[mail:mock] Subject:', input.subject);
+    console.log('[mail:mock] Body:', input.text);
     return;
   }
 
-  await transporter.sendMail({ from, ...input });
-}
-
-export async function sendPasswordResetEmail(email: string, resetUrl: string) {
-  await sendMail({
-    to: email,
-    subject: 'Reset your LeadLocal password',
-    text: `Reset your password using this link: ${resetUrl}. This link expires in 60 minutes.`
+  const { error } = await resend.emails.send({
+    from: FROM,
+    to: input.to,
+    subject: input.subject,
+    text: input.text,
+    html: input.html,
   });
-}
 
-export async function sendClientNewBidEmail(params: {
-  to: string;
-  requestTitle: string;
-  amount: number;
-  timeline: string;
-  message: string;
-}) {
-  await sendMail({
-    to: params.to,
-    subject: `New bid for: ${params.requestTitle}`,
-    text: `You received a new bid. Amount: $${params.amount}. Timeline: ${params.timeline}. Message: ${params.message}`
-  });
+  if (error) {
+    console.error('[mail] Resend error:', error);
+    throw new Error(`Failed to send email: ${error.message}`);
+  }
 }
 
 export async function sendEmailVerificationCode(email: string, code: string) {
@@ -76,7 +41,50 @@ export async function sendEmailVerificationCode(email: string, code: string) {
         </div>
         <p style="color:#94a3b8;font-size:13px">This code expires in 15 minutes. If you did not create an account, ignore this email.</p>
       </div>
-    `
+    `,
+  });
+}
+
+export async function sendPasswordResetEmail(email: string, resetUrl: string) {
+  await sendMail({
+    to: email,
+    subject: 'Reset your LeadLocal password',
+    text: `Reset your password here: ${resetUrl}\n\nThis link expires in 60 minutes.\n\nIf you did not request this, ignore this email.`,
+    html: `
+      <div style="font-family:sans-serif;max-width:480px;margin:0 auto">
+        <h2 style="color:#1e293b">Reset your password</h2>
+        <p style="color:#475569">Click the button below to set a new password. This link expires in 60 minutes.</p>
+        <div style="margin:24px 0;text-align:center">
+          <a href="${resetUrl}" style="display:inline-block;background:#2563eb;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:600">Reset password</a>
+        </div>
+        <p style="color:#94a3b8;font-size:13px">If you did not request a password reset, you can safely ignore this email.</p>
+      </div>
+    `,
+  });
+}
+
+export async function sendClientNewBidEmail(params: {
+  to: string;
+  requestTitle: string;
+  amount: number;
+  timeline: string;
+  message: string;
+}) {
+  await sendMail({
+    to: params.to,
+    subject: `New bid on: ${params.requestTitle}`,
+    text: `You received a new bid.\n\nAmount: $${params.amount}\nTimeline: ${params.timeline}\nMessage: ${params.message}`,
+    html: `
+      <div style="font-family:sans-serif;max-width:480px;margin:0 auto">
+        <h2 style="color:#1e293b">New bid received</h2>
+        <p style="color:#475569">Someone placed a bid on your request: <strong>${params.requestTitle}</strong></p>
+        <table style="width:100%;border-collapse:collapse;margin:16px 0">
+          <tr><td style="padding:8px;color:#64748b;width:100px">Amount</td><td style="padding:8px;font-weight:600">$${params.amount}</td></tr>
+          <tr><td style="padding:8px;color:#64748b">Timeline</td><td style="padding:8px">${params.timeline}</td></tr>
+          <tr><td style="padding:8px;color:#64748b;vertical-align:top">Message</td><td style="padding:8px">${params.message}</td></tr>
+        </table>
+      </div>
+    `,
   });
 }
 
@@ -89,6 +97,17 @@ export async function sendContractorAwardEmail(params: {
   await sendMail({
     to: params.to,
     subject: `Your bid was accepted: ${params.requestTitle}`,
-    text: `Congrats! Your bid was accepted. Next steps: contact the client at ${params.clientEmail}${params.clientPhone ? ` / ${params.clientPhone}` : ''}.`
+    text: `Congratulations! Your bid was accepted.\n\nContact the client at:\nEmail: ${params.clientEmail}${params.clientPhone ? `\nPhone: ${params.clientPhone}` : ''}`,
+    html: `
+      <div style="font-family:sans-serif;max-width:480px;margin:0 auto">
+        <h2 style="color:#1e293b">Your bid was accepted!</h2>
+        <p style="color:#475569">Great news — the client accepted your bid on <strong>${params.requestTitle}</strong>.</p>
+        <p style="color:#475569">Reach out to them directly:</p>
+        <table style="width:100%;border-collapse:collapse;margin:16px 0">
+          <tr><td style="padding:8px;color:#64748b;width:80px">Email</td><td style="padding:8px"><a href="mailto:${params.clientEmail}">${params.clientEmail}</a></td></tr>
+          ${params.clientPhone ? `<tr><td style="padding:8px;color:#64748b">Phone</td><td style="padding:8px">${params.clientPhone}</td></tr>` : ''}
+        </table>
+      </div>
+    `,
   });
 }
