@@ -5,7 +5,12 @@ import { prisma } from '@/lib/prisma';
 import { adminSettingsSchema } from '@/lib/schemas';
 import { revalidatePath } from 'next/cache';
 
-export async function updateSettingsAction(_prevState: { error: string | null; success: string | null }, formData: FormData) {
+type SettingsActionState = { error: string | null; success: string | null };
+
+export async function updateSettingsAction(
+  _prevState: SettingsActionState,
+  formData: FormData
+): Promise<SettingsActionState> {
   const session = await auth();
   if (!session?.user || session.user.role !== 'ADMIN') return { error: 'Unauthorized', success: null };
 

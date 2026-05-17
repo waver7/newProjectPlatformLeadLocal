@@ -41,10 +41,7 @@ export async function createCheckoutSessionAction(planCode: PlanCode) {
     success_url: `${returnBase}?success=1`,
     cancel_url: `${returnBase}?canceled=1`,
     metadata: { userId, planCode },
-    // Allow promo codes on the checkout page
     allow_promotion_codes: true,
-    // Pre-fill email so the user doesn't have to type it again
-    customer_update: { email: 'auto' },
   });
 
   if (!checkoutSession.url) throw new Error('Stripe did not return a checkout URL');
