@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { loginAction } from '@/app/actions/auth-actions';
 import { Card, Button } from '@/components/ui';
 
-type Props = { searchParams?: { error?: string; verified?: string } };
+type Props = { searchParams?: { error?: string; verified?: string; reset?: string } };
 
 const errors: Record<string, string> = {
   invalid_credentials: 'Incorrect email or password. Please try again.',
@@ -11,12 +11,17 @@ const errors: Record<string, string> = {
 };
 
 const successes: Record<string, string> = {
-  verified: 'Email verified! Sign in to access your dashboard.'
+  verified: 'Email verified! Sign in to access your dashboard.',
+  reset: 'Password updated. Sign in with your new password.'
 };
 
 export default function LoginPage({ searchParams }: Props) {
   const errorMsg = searchParams?.error ? (errors[searchParams.error] ?? errors.auth_failed) : null;
-  const successMsg = searchParams?.verified ? successes.verified : null;
+  const successMsg = searchParams?.verified
+    ? successes.verified
+    : searchParams?.reset
+      ? successes.reset
+      : null;
 
   return (
     <div className="flex min-h-[60vh] items-center justify-center">
