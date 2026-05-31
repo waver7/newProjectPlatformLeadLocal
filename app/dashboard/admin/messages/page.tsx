@@ -26,7 +26,7 @@ export default async function AdminMessages() {
                 <div>
                   <p className="text-sm font-medium text-slate-900">
                     {m.sender.profile?.fullName ?? m.sender.email}
-                    <span className="ml-1 text-slate-500 font-normal">on "{m.conversation.request.title}"</span>
+                    <span className="ml-1 text-slate-500 font-normal">on &ldquo;{m.conversation.request.title}&rdquo;</span>
                   </p>
                   <p className="mt-1 text-sm text-slate-700">{m.content}</p>
                 </div>
@@ -48,7 +48,7 @@ export default async function AdminMessages() {
               <div className="min-w-0 flex-1">
                 <p className="text-sm text-slate-500">
                   <span className="font-medium text-slate-900">{m.sender.profile?.fullName ?? m.sender.email}</span>
-                  {' on "'}{m.conversation.request.title}{'"'}
+                  {' on '}&ldquo;{m.conversation.request.title}&rdquo;
                 </p>
                 <p className="mt-1 text-sm text-slate-700 line-clamp-2">{m.content}</p>
               </div>
