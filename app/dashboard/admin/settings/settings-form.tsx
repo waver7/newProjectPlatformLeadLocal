@@ -6,7 +6,7 @@ import { Button, Alert, FormField, Input } from '@/components/ui';
 
 type Props = { freePostLimit: number; requireContractorSubscription: boolean; requireBidCredits: boolean };
 
-const initial = { error: null, success: null };
+const initial = { error: null as string | null, success: null as string | null };
 
 function SaveButton() {
   const { pending } = useFormStatus();
