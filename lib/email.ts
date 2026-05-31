@@ -23,6 +23,12 @@ async function sendMail(input: MailInput) {
 
   if (error) {
     console.error('[mail] Resend error:', error);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[mail:dev-fallback] To:', input.to);
+      console.log('[mail:dev-fallback] Subject:', input.subject);
+      console.log('[mail:dev-fallback] Body:', input.text);
+      return;
+    }
     throw new Error(`Failed to send email: ${error.message}`);
   }
 }

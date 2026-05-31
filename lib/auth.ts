@@ -4,11 +4,9 @@ import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { prisma } from './prisma';
 
-const credsSchema = z.object({ email: z.string().min(1), password: z.string().min(1) });
+const credsSchema = z.object({ username: z.string().min(1), password: z.string().min(1) });
 
-// Lock an account after this many consecutive failures …
 const MAX_FAILURES = 5;
-// … for this many minutes.
 const LOCKOUT_MINUTES = 15;
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
@@ -16,33 +14,27 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   pages: { signIn: '/login' },
   providers: [
     Credentials({
-      credentials: { email: {}, password: {} },
+      credentials: { username: {}, password: {} },
       authorize: async (credentials) => {
         const parsed = credsSchema.safeParse(credentials);
         if (!parsed.success) return null;
 
-        const loginId = parsed.data.email.trim().toLowerCase();
+        const loginId = parsed.data.username.trim().toLowerCase();
 
         const user = await prisma.user.findUnique({
-          where: { email: loginId },
+          where: { username: loginId },
           include: { profile: true },
         });
 
-        // Unknown user — return null without timing difference (bcrypt still runs)
         if (!user) {
-          // Run a dummy compare so response time is constant (prevents user enumeration)
           await bcrypt.compare(parsed.data.password, '$2b$10$invalidhashpadding000000000000000000000000000000000000');
           return null;
         }
 
-        // Account deactivated by admin
         if (!user.isActive) return null;
 
-        // Account locked — check lockout window
         if (user.lockedUntil && user.lockedUntil > new Date()) {
           const remaining = Math.ceil((user.lockedUntil.getTime() - Date.now()) / 60_000);
-          // We can't surface a message from `authorize`, but the null return will redirect
-          // to /login?error=invalid_credentials; the UI can add a generic "account locked" hint.
           console.warn(`[auth] Account locked: ${loginId} — ${remaining} min remaining`);
           return null;
         }
@@ -52,21 +44,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!passwordOk) {
           const newCount = user.failedLoginAttempts + 1;
           const shouldLock = newCount >= MAX_FAILURES;
-
           try {
             await prisma.user.update({
               where: { id: user.id },
               data: {
                 failedLoginAttempts: newCount,
-                lockedUntil: shouldLock
-                  ? new Date(Date.now() + LOCKOUT_MINUTES * 60_000)
-                  : undefined,
+                lockedUntil: shouldLock ? new Date(Date.now() + LOCKOUT_MINUTES * 60_000) : undefined,
               },
             });
           } catch (e) {
             console.error('[auth] Failed to update login failure counter:', e);
           }
-
           return null;
         }
 
